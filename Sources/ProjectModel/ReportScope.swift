@@ -18,16 +18,20 @@ extension ScopedFinding {
 /// set of canonical paths, and the tool canonicalizes its entries the same way
 /// it canonicalizes findings, so a path option such as `--relative-to` changes
 /// only how paths are printed, never what is kept. An empty scope, such as an
-/// empty `--only-from` file, keeps nothing: the report is empty and, having no
-/// findings, exits 0. "No scope" is expressed by the caller as a `ReportScope?`
-/// that is nil, never by an empty scope.
+/// empty `--only-from` file, keeps nothing, so the report is empty (the tools
+/// then exit 0 because nothing was found). "No scope" is expressed by the caller
+/// as a `ReportScope?` that is nil, never by an empty scope.
 public struct ReportScope: Sendable, Equatable {
+    /// The canonical paths in scope.
     public let files: Set<String>
 
+    /// True when the scope keeps nothing; distinct from no scope, which callers express as nil.
     public var isEmpty: Bool { files.isEmpty }
 
-    /// - Parameter canonicalize: Maps each entry to the spelling the findings' paths use. The default keeps entries as given.
-    public init(files: some Sequence<String>, canonicalize: (String) -> String = { $0 }) {
+    /// The caller injects the canonicalizer that spells entries the way its findings' paths are spelled (a tool passes its own path canonicalization).
+    /// - Parameter canonicalize: Maps each entry to the spelling the findings' paths use.
+    /// - Complexity: O(n) in the number of entries.
+    public init(files: some Sequence<String>, canonicalize: (String) -> String) {
         self.files = Set(files.map(canonicalize))
     }
 
@@ -37,9 +41,9 @@ public struct ReportScope: Sendable, Equatable {
     }
 
     /// Splits findings into in-scope and out-of-scope, each keeping the input order.
-    public func filter<Finding: ScopedFinding>(_ findings: [Finding]) -> (inScope: [Finding], outOfScope: [Finding]) {
-        var inScope: [Finding] = []
-        var outOfScope: [Finding] = []
+    public func filter<Item: ScopedFinding>(_ findings: [Item]) -> (inScope: [Item], outOfScope: [Item]) {
+        var inScope: [Item] = []
+        var outOfScope: [Item] = []
         for finding in findings {
             if contains(finding) {
                 inScope.append(finding)
