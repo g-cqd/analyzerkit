@@ -30,14 +30,16 @@ in their input.
 ## Use
 
 ```swift
-.package(url: "https://github.com/g-cqd/analyzerkit.git", revision: "<commit>")
+.package(url: "https://github.com/g-cqd/analyzerkit.git", from: "0.1.0")
 ```
 
 ```swift
 .product(name: "ProjectModel", package: "analyzerkit")
 ```
 
-The analyzers pin a revision, as they pin their other private dependencies.
+Releases are tagged starting at 0.1.0 and follow semantic versioning; while the
+major version is 0, a minor release may change the API. The analyzers may pin an
+exact revision instead, for reproducible builds.
 
 ## Report scope
 
@@ -46,8 +48,11 @@ is analyzed; only the report is scoped. A finding is kept when any of its
 locations (primary or related) is in scope. The scope holds canonical paths: the
 caller injects the canonicalizer that spells entries the way its findings' paths
 are spelled, because the library cannot canonicalize without Foundation. A
-path-printing option therefore changes what is printed, never what is kept. An
-empty scope keeps nothing, so the report is empty; the tools exit 0 on an empty
+path-printing option therefore changes what is printed, never what is kept. The
+library does not resolve paths itself: the canonicalizer a tool injects decides how
+a `--only` entry resolves (arcleak resolves a relative entry against the working
+directory), so finding paths and `--only` entries must be canonicalized the same
+way. An empty scope keeps nothing, so the report is empty; the tools exit 0 on an empty
 report. "No scope" is a `nil` `ReportScope?`, never an empty one.
 
 ## Report schema
