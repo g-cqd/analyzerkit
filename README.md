@@ -20,6 +20,8 @@ reaches the others.
 | `GeneratedCode` | whether a generator wrote a file, from its header or its path |
 | `TestConventions` | the attributes and base class the test frameworks look for, and whether a file is test code (its imports or its path) |
 | `ProjectPlatforms` | the platforms a project builds for, from an Xcode project's `SDKROOT` or a manifest's `platforms`, as `#if os(...)` names |
+| `ReportScope` | the `--only` file list a report is limited to; keeps a finding when any of its locations (with `ScopedFinding`) is in scope |
+| `ReportSchema` | the version of the JSON report contract shared by the analyzers |
 
 Everything is syntactic or textual: no build, no index, no Foundation
 dependency in the library. Each scanner states its complexity; all are linear
@@ -45,6 +47,14 @@ locations (primary or related) is in scope. The scope holds canonical paths,
 canonicalized the way findings are, so a path-printing option changes what is
 printed, never what is kept. An empty scope keeps nothing and the report is
 empty, exiting 0. "No scope" is a `nil` `ReportScope?`, never an empty one.
+
+## Report schema
+
+`ReportSchema.version` is the version of the JSON report contract shared by
+arcleak, dolly and deadwood, written as the top-level `schemaVersion` field of
+`--format json`. It changes only when a field of the 1.x contract is removed,
+renamed or changes meaning; adding a field does not change it, so a consumer
+must ignore fields it does not know.
 
 ## Develop
 
