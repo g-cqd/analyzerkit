@@ -37,6 +37,15 @@ in their input.
 
 The analyzers pin a revision, as they pin their other private dependencies.
 
+## Report scope
+
+`ReportScope` is the `--only` file list every analyzer shares. The whole corpus
+is analyzed; only the report is scoped. A finding is kept when any of its
+locations (primary or related) is in scope. The scope holds canonical paths,
+canonicalized the way findings are, so a path-printing option changes what is
+printed, never what is kept. An empty scope keeps nothing and the report is
+empty, exiting 0. "No scope" is a `nil` `ReportScope?`, never an empty one.
+
 ## Develop
 
 ```sh
