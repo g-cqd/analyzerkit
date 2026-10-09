@@ -25,7 +25,8 @@ let package = Package(
     ],
     targets: [
         // The shared model of a Swift project: entry points the system or the
-        // test frameworks create, code regions, generated files.
+        // test frameworks create, code regions, generated files, and the shared
+        // report contract (scope, schema version).
         .target(
             name: "ProjectModel",
             dependencies: [

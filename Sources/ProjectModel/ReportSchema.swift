@@ -1,9 +1,11 @@
 /// The version of the JSON report contract shared by arcleak, dolly and deadwood.
 ///
 /// Each tool writes it as the top-level `schemaVersion` field of `--format json`.
-/// It changes only when a field of the 1.x contract is removed, renamed or changes
-/// meaning; adding a field does not change it, so a consumer must ignore fields it
-/// does not know.
+/// It changes only when a change can break a consumer that ignores unknown fields:
+/// a field is removed, renamed, retyped, made required or optional, or changes
+/// meaning, or a closed value set (rule ids, severities) changes. Adding a field does
+/// not change it, so a consumer must ignore fields it does not know, and must reject
+/// a `schemaVersion` above the one it was written for.
 public enum ReportSchema {
     /// The current contract version.
     public static let version = 1
