@@ -14,6 +14,10 @@ permissions:
 jobs:
   ci:
     uses: Aemi-Studio/aemi/.github/workflows/swift-tool.yml@ci/shared-tool-workflow
+    # The shared graph's `publish` job asks for contents: write; a caller must grant what a called job asks
+    # for, even though the job is skipped here (no tool, so nothing to publish).
+    permissions:
+      contents: write
     with:
       lint-scripts: ""
       self-analysis: ""
