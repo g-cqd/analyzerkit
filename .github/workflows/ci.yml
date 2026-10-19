@@ -1,0 +1,19 @@
+name: CI
+
+# A library: the shared graph builds and tests it on Linux and macOS in parallel, on a cached SwiftPM tree.
+# There is no executable, so no release archives; a `v*` tag is just a tag.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: Aemi-Studio/aemi/.github/workflows/swift-tool.yml@ci/shared-tool-workflow
+    with:
+      lint-scripts: ""
+      self-analysis: ""
