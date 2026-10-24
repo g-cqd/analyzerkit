@@ -27,6 +27,30 @@ Everything is syntactic or textual: no build, no index, no Foundation
 dependency in the library. Each scanner states its complexity; all are linear
 in their input.
 
+## Library: `SourceCorpus`
+
+What every analyzer does before it looks at a rule, kept here so a fix reaches arcleak, dolly, deadwood and modeler
+together. Each of these existed as a copy in each tool; the copies had drifted (only deadwood and dolly kept a link out of
+the walked directory out of the corpus).
+
+| API | Answers |
+| --- | --- |
+| `SourcePath` | one spelling per file: absolute, lexically standardized, symlinks resolved; repeats dropped |
+| `SourceDiscovery` | the files under a directory that a predicate accepts, each directory walked once, links out of the root not followed |
+| `RepositoryRoot` | the repository a path lives in, so fingerprints do not depend on the checkout's location |
+| `BoundedFileReader` | a regular file's bytes with a size cap, from one `open`, `fstat` and `pread` |
+| `ContentFingerprint` | the XXH64 identity of a file's bytes and a salt, for cache entries |
+| `BuildIdentity` | which build of a tool is running, so one build's cached facts are not read by another |
+
+## Library: `CorpusScan`
+
+| API | Answers |
+| --- | --- |
+| `FactsCache<Facts>` | per-file facts keyed by path and fingerprint, written with AemiJSON, failing open on a missing, foreign or corrupt file |
+| `CorpusScanner.scan` | canonicalize, read, fingerprint, reuse or extract in parallel (bounded by Aemi's `mapConcurrently`), prune, persist |
+
+`SourceCorpus` depends on Aemi's `AemiKernel` and `AemiIO`; `CorpusScan` adds `AemiRuntime` and AemiJSON.
+
 ## Use
 
 ```swift
