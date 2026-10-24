@@ -66,6 +66,16 @@ the walked directory out of the corpus).
 A BERT WordPiece tokenizer over a model bundle's `vocab.txt`, so no analyzer links swift-transformers to feed a Core ML
 bundle. Pure Swift; the analyzers' parity tests compare it with swift-transformers.
 
+## Library: `ControlFlow`
+
+| API | Answers |
+| --- | --- |
+| `ControlFlowGraph.build` | the control flow of a function body: a node per statement and condition, an edge for each way control goes on, including a `try` that throws and the `defer`s a `return`, `throw`, `break` or `continue` runs |
+| `ControlFlowGraph.solve` | a forward dataflow over it, with a transfer per edge, so a condition can say something different on its true and false edges |
+| `path`, `reachable` | a shortest path between two nodes, for the witness of a finding; the nodes control can reach |
+
+Closures and nested functions are steps of the function that contains them, not entered.
+
 ## Use
 
 ```swift
