@@ -21,6 +21,8 @@ let package = Package(
         .library(name: "ProjectModel", targets: ["ProjectModel"]),
         .library(name: "SourceCorpus", targets: ["SourceCorpus"]),
         .library(name: "CorpusScan", targets: ["CorpusScan"]),
+        .library(name: "ReportSupport", targets: ["ReportSupport"]),
+        .library(name: "WordPiece", targets: ["WordPiece"]),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
@@ -58,6 +60,19 @@ let package = Package(
                 .product(name: "AemiRuntime", package: "aemi"),
                 .product(name: "AemiJSON", package: "AemiJSON"),
             ],
+            swiftSettings: strictSwiftSettings
+        ),
+        // What the SARIF and xcode reports of every analyzer say about a location.
+        .target(
+            name: "ReportSupport",
+            dependencies: ["SourceCorpus"],
+            swiftSettings: strictSwiftSettings
+        ),
+        // A BERT WordPiece tokenizer, so no analyzer links swift-transformers to feed a Core ML bundle.
+        .target(name: "WordPiece", swiftSettings: strictSwiftSettings),
+        .testTarget(
+            name: "ReportSupportTests",
+            dependencies: ["ReportSupport", "ProjectModel"],
             swiftSettings: strictSwiftSettings
         ),
         .testTarget(
