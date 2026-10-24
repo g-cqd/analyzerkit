@@ -168,3 +168,23 @@ extension ControlFlowGraph {
         #expect(graph(source).nodes.count > 1, "deeply nested source is bounded, not a stack overflow")
     }
 }
+
+@Suite struct ImplicitGetterTests {
+    @Test func `the statements of a computed property's getter have a graph with the right lines`() {
+        let source = "struct S {\n var x: Int {\n  let a = 1\n  return a\n }\n}"
+        let tree = Parser.parse(source: source)
+        let converter = SourceLocationConverter(fileName: "T.swift", tree: tree)
+        final class Finder: SyntaxVisitor {
+            var statements: CodeBlockItemListSyntax?
+            init() { super.init(viewMode: .sourceAccurate) }
+            override func visit(_ node: AccessorBlockSyntax) -> SyntaxVisitorContinueKind {
+                if case .getter(let list) = node.accessors { statements = list }
+                return .skipChildren
+            }
+        }
+        let finder = Finder()
+        finder.walk(tree)
+        let graph = ControlFlowGraph.build(statements: finder.statements!, converter: converter)
+        #expect(graph.lines(to: .returned) == [3, 4])
+    }
+}
