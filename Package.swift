@@ -23,6 +23,7 @@ let package = Package(
         .library(name: "CorpusScan", targets: ["CorpusScan"]),
         .library(name: "ReportSupport", targets: ["ReportSupport"]),
         .library(name: "WordPiece", targets: ["WordPiece"]),
+        .library(name: "ControlFlow", targets: ["ControlFlow"]),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
@@ -66,6 +67,18 @@ let package = Package(
         .target(
             name: "ReportSupport",
             dependencies: ["SourceCorpus"],
+            swiftSettings: strictSwiftSettings
+        ),
+        // The control flow of a function body, with its throwing and `defer` exits, for the analyzers that check a
+        // property on every path.
+        .target(
+            name: "ControlFlow",
+            dependencies: [.product(name: "SwiftSyntax", package: "swift-syntax")],
+            swiftSettings: strictSwiftSettings
+        ),
+        .testTarget(
+            name: "ControlFlowTests",
+            dependencies: ["ControlFlow", .product(name: "SwiftParser", package: "swift-syntax")],
             swiftSettings: strictSwiftSettings
         ),
         // A BERT WordPiece tokenizer, so no analyzer links swift-transformers to feed a Core ML bundle.
