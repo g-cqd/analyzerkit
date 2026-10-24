@@ -50,9 +50,9 @@ struct ControlFlowBuilder {
         self.converter = converter
     }
 
-    mutating func build(_ body: CodeBlockSyntax) -> ControlFlowGraph {
+    mutating func build(_ statements: CodeBlockItemListSyntax) -> ControlFlowGraph {
         let entry = makeNode(.entry, syntax: nil, line: 0)
-        let remaining = block(body.statements, after: [Open(node: entry, kind: .next)])
+        let remaining = block(statements, after: [Open(node: entry, kind: .next)])
         connect(remaining, to: exit(.fellOff))
         return ControlFlowGraph(nodes: nodes)
     }

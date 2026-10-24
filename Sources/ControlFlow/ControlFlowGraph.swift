@@ -85,8 +85,16 @@ public struct ControlFlowGraph: Sendable {
     /// - Complexity: O(*n*) nodes in the number of statements, plus the copies of `defer` bodies: one per exit path
     ///   from each scope that has one.
     public static func build(_ body: CodeBlockSyntax, converter: SourceLocationConverter) -> ControlFlowGraph {
+        build(statements: body.statements, converter: converter)
+    }
+
+    /// The graph of a list of statements, for a body that has no braces of its own: the implicit getter of a
+    /// computed property.
+    public static func build(statements: CodeBlockItemListSyntax, converter: SourceLocationConverter)
+        -> ControlFlowGraph
+    {
         var builder = ControlFlowBuilder(converter: converter)
-        return builder.build(body)
+        return builder.build(statements)
     }
 
     // MARK: - Queries
