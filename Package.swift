@@ -20,6 +20,7 @@ let package = Package(
     products: [
         .library(name: "ProjectModel", targets: ["ProjectModel"]),
         .library(name: "SourceCorpus", targets: ["SourceCorpus"]),
+        .library(name: "CorpusScan", targets: ["CorpusScan"]),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
@@ -40,12 +41,20 @@ let package = Package(
             swiftSettings: strictSwiftSettings
         ),
         // What every analyzer does before it looks at a rule: find the Swift files, read and
-        // fingerprint them, reuse cached facts, and extract the rest in parallel.
+        // fingerprint them, and tell one build of the tool from another.
         .target(
             name: "SourceCorpus",
             dependencies: [
                 .product(name: "AemiKernel", package: "aemi"),
                 .product(name: "AemiIO", package: "aemi"),
+            ],
+            swiftSettings: strictSwiftSettings
+        ),
+        // The per-file facts cache and the parallel scan that uses it.
+        .target(
+            name: "CorpusScan",
+            dependencies: [
+                "SourceCorpus",
                 .product(name: "AemiRuntime", package: "aemi"),
                 .product(name: "AemiJSON", package: "AemiJSON"),
             ],
@@ -54,6 +63,11 @@ let package = Package(
         .testTarget(
             name: "SourceCorpusTests",
             dependencies: ["SourceCorpus"],
+            swiftSettings: strictSwiftSettings
+        ),
+        .testTarget(
+            name: "CorpusScanTests",
+            dependencies: ["CorpusScan", "SourceCorpus"],
             swiftSettings: strictSwiftSettings
         ),
         .testTarget(

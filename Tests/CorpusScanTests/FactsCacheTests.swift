@@ -1,3 +1,4 @@
+import CorpusScan
 import Foundation
 import SourceCorpus
 import Testing
