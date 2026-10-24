@@ -1,4 +1,5 @@
 internal import AemiRuntime
+internal import SourceCorpus
 
 #if canImport(FoundationEssentials)
     public import FoundationEssentials

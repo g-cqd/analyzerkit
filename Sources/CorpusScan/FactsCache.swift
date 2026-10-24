@@ -1,4 +1,5 @@
 internal import AemiJSON
+internal import SourceCorpus
 
 #if canImport(FoundationEssentials)
     public import FoundationEssentials
