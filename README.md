@@ -41,6 +41,7 @@ the walked directory out of the corpus).
 | `BoundedFileReader` | a regular file's bytes with a size cap, from one `open`, `fstat` and `pread` |
 | `ContentFingerprint` | the XXH64 identity of a file's bytes and a salt, for cache entries |
 | `BuildIdentity` | which build of a tool is running, so one build's cached facts are not read by another |
+| `BoundedFileReader.readConfiguration` | a configuration or baseline file's bytes, stat first, with the wording of Foundation's errors that the analyzers print |
 
 ## Library: `CorpusScan`
 
@@ -50,6 +51,20 @@ the walked directory out of the corpus).
 | `CorpusScanner.scan` | canonicalize, read, fingerprint, reuse or extract in parallel (bounded by Aemi's `mapConcurrently`), prune, persist |
 
 `SourceCorpus` depends on Aemi's `AemiKernel` and `AemiIO`; `CorpusScan` adds `AemiRuntime` and AemiJSON.
+
+## Library: `ReportSupport`
+
+| API | Answers |
+| --- | --- |
+| `ArtifactURI` | how a SARIF log names a file: relative to the base when it is made of unescaped characters, else an absolute percent-encoded `file://` URI |
+| `SarifColumns` | a UTF-8 byte column as the UTF-16 code-unit column SARIF declares, with the byte-order mark handled as the analyzer's parse did |
+
+`ProjectModel` also holds `Severity` and `Array.partitioned(by:)`, which every analyzer's report used a copy of.
+
+## Library: `WordPiece`
+
+A BERT WordPiece tokenizer over a model bundle's `vocab.txt`, so no analyzer links swift-transformers to feed a Core ML
+bundle. Pure Swift; the analyzers' parity tests compare it with swift-transformers.
 
 ## Use
 
