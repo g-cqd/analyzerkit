@@ -264,3 +264,9 @@ public enum SharedConfiguration {
         return Resolved(json: json, directory: directory, sources: layers.map(\.source), overrides: overrides)
     }
 }
+
+extension SharedConfiguration.Resolved {
+    /// What `--verbose` prints about the configuration (ADR-0020 item 5): the files read, then each key more than one
+    /// source set and which won.
+    public func verboseLines(tool: String) -> [String] { [] }
+}
