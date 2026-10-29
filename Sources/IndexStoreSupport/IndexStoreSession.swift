@@ -1,6 +1,12 @@
 #if canImport(IndexStoreDB)
     public import IndexStoreDB
 
+    #if canImport(FoundationEssentials)
+        internal import FoundationEssentials
+    #else
+        internal import Foundation
+    #endif
+
     /// An open index store whose coverage of the analyzed files was checked (ADR-0004, ADR-0005; roadmap 0010).
     ///
     /// The only way to a database is ``open(_:cacheRoot:library:analyzedFiles:)``, which returns one only when some
@@ -40,7 +46,34 @@
         public static func open(
             _ path: String, cacheRoot: String, library: String, analyzedFiles: [String]
         ) -> Outcome {
-            .failed(reason: "not implemented")
+            let store: String
+            switch IndexStoreLocation.resolve(path) {
+            case .store(let resolved): store = resolved
+            case .notAStore(_, let reason): return .notAStore(reason: reason)
+            }
+            let trust = BinaryTrustChecker.assess(library)
+            guard trust.isTrusted else {
+                return .failed(reason: "libIndexStore at \(library) is not trusted: \(trust.rejection ?? "")")
+            }
+            let databaseDirectory = IndexStoreLocation.databaseDirectory(forStore: store, cacheRoot: cacheRoot)
+            let database: IndexStoreDB
+            do {
+                try FileManager.default.createDirectory(atPath: databaseDirectory, withIntermediateDirectories: true)
+                database = try IndexStoreDB(
+                    storePath: store, databasePath: databaseDirectory,
+                    library: IndexStoreLibrary(dylibPath: trust.path), waitUntilDoneInitializing: true)
+            } catch {
+                return .failed(reason: "the index store at \(store) could not be opened: \(error)")
+            }
+            let coverage = IndexCoverage.classify(
+                analyzedFiles, unitDate: { database.dateOfLatestUnitFor(filePath: $0) },
+                modificationDate: { file in
+                    (try? FileManager.default.attributesOfItem(atPath: file))?[.modificationDate] as? Date
+                })
+            guard coverage.isUsable else { return .notUsable(store: store, coverage: coverage) }
+            return .usable(
+                IndexStoreSession(
+                    store: store, databaseDirectory: databaseDirectory, database: database, coverage: coverage))
         }
     }
 #endif
