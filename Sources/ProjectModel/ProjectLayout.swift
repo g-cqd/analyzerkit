@@ -1,5 +1,10 @@
-internal import Foundation
 internal import SourceCorpus
+
+#if canImport(FoundationEssentials)
+    internal import FoundationEssentials
+#else
+    internal import Foundation
+#endif
 
 /// The project enclosing an analyzed corpus, independent of package nesting and worktree folder names.
 public struct ProjectLayout: Sendable, Equatable {
