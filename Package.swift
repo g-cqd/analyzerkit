@@ -77,9 +77,12 @@ let package = Package(
             dependencies: [
                 "Suppression", .product(name: "SwiftParser", package: "swift-syntax"),
             ], swiftSettings: strictSwiftSettings),
-        .target(name: "IndexStoreSupport", dependencies: ["SourceCorpus"], swiftSettings: strictSwiftSettings),
+        .target(
+            name: "IndexStoreSupport", dependencies: ["SourceCorpus", "ProjectModel", "ReportSupport"],
+            swiftSettings: strictSwiftSettings),
         .testTarget(
-            name: "IndexStoreSupportTests", dependencies: ["IndexStoreSupport"], swiftSettings: strictSwiftSettings),
+            name: "IndexStoreSupportTests", dependencies: ["IndexStoreSupport", "ProjectModel", "ReportSupport"],
+            swiftSettings: strictSwiftSettings),
         // The shared model of a Swift project: entry points the system or the
         // test frameworks create, code regions, generated files, and the shared
         // report contract (scope, schema version).
