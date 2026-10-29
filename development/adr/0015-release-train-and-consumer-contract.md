@@ -18,7 +18,7 @@ cleanly by any of them.
 
 1. **The contract** — what a consumer may depend on, changed only as below: release archive names
    (`<tool>-<version>-macos-arm64.tar.gz`, `…-linux-x86_64.tar.gz`, `<tool>-<version>.artifactbundle.zip`, each with a
-   `.sha256`), the executable's name and path in the bundle, subcommands and flags, exit codes (ADR-0006), report keys
+   `.sha256`), the executable's name and path in the bundle, subcommands and flags, exit codes (ADR-0019), report keys
    (ADR-0017), SARIF shape, baseline format and fingerprints, suppression syntax (`@al:`/`@arcleak:`, `@dw:`/`@deadwood:`,
    `@dl:`/`@dolly:`, `@fc:`/`@fcheck:`), configuration files and keys.
 2. **Three waves**, each a minor release of every tool, in the order arcleak, deadwood, dolly, fcheck, modeler, after an
