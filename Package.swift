@@ -47,6 +47,9 @@ let package = Package(
         // arcleak and deadwood must pin too (SwiftPM resolves one revision per package in a graph).
         .package(
             url: "https://github.com/swiftlang/indexstore-db.git", revision: "0390867818c28241af4650eb4ef29af5669335a3"),
+        // The wire format of the facts cache's shards (ADR-0011), pinned like AemiJSON to one revision on the same aemi.
+        .package(
+            url: "https://github.com/g-cqd/AemiProtobuf.git", revision: "b11dc9178e67a399fdea2046acb4d0f00febac16"),
         .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "9a7d4450ff518a390613821913ba85c6a6944521"),
     ],
     targets: [
@@ -131,7 +134,10 @@ let package = Package(
             dependencies: [
                 "SourceCorpus",
                 .product(name: "AemiRuntime", package: "aemi"),
+                .product(name: "AemiKernel", package: "aemi"),
+                .product(name: "AemiIO", package: "aemi"),
                 .product(name: "AemiJSON", package: "AemiJSON"),
+                .product(name: "AemiProtobufCore", package: "AemiProtobuf"),
             ],
             swiftSettings: strictSwiftSettings
         ),
