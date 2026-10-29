@@ -6,7 +6,7 @@ date: 2026-10-29
 
 # 0013 — `AnalyzerCLI`: one command-line surface
 
-Scope (ADR-0006, ADR-0018): option groups (input, output, rules, cache, index, experimental), unified exit codes
+Scope (ADR-0019, ADR-0018): option groups (input, output, rules, cache, index, experimental), unified exit codes
 (0/1/64/70/74/78), hidden aliases with a stderr deprecation line, `--verbose` (which also lifts `RunNote`'s ten-path
 cap, from 0011), `--quiet`, `--timings`, the stderr writer.
 
