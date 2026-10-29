@@ -62,7 +62,7 @@ public enum CorpusScanner {
         let canonical = SourcePath.canonicalized(paths)
         let snapshot = cacheURL.map { FactsCache<Facts>.load(url: $0, identity: identity) } ?? FactsCache<Facts>()
         let files = try await mapConcurrently(canonical, limit: width) { path in
-            outcome(for: path, snapshot: snapshot, salt: salt, extract: extract)
+            await outcome(for: path, snapshot: snapshot, salt: salt, extract: extract)
         }.sorted { $0.path < $1.path }
 
         let hits = files.reduce(0) { $0 + ($1.cacheHit ? 1 : 0) }
@@ -76,8 +76,8 @@ public enum CorpusScanner {
         for path: String,
         snapshot: FactsCache<Facts>,
         salt: String,
-        extract: @Sendable (String, [UInt8]) -> Facts
-    ) -> ScannedFile<Facts> {
+        extract: @escaping @Sendable (String, [UInt8]) -> Facts
+    ) async -> ScannedFile<Facts> {
         let bytes: [UInt8]
         do {
             bytes = try BoundedFileReader.read(path: path, cap: BoundedFileReader.sourceByteCap)
@@ -88,8 +88,10 @@ public enum CorpusScanner {
         if let cached = snapshot.facts(for: path, fingerprint: fingerprint) {
             return ScannedFile(path: path, facts: cached, fingerprint: fingerprint, cacheHit: true, failure: nil)
         }
-        return ScannedFile(
-            path: path, facts: extract(path, bytes), fingerprint: fingerprint, cacheHit: false, failure: nil)
+        // Extraction parses and walks a syntax tree, which recurses once per level; a cache hit does neither, so only
+        // a miss pays for a thread with a large stack (roadmap 0041).
+        let facts = await LargeStack.run { extract(path, bytes) }
+        return ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: false, failure: nil)
     }
 
     /// Writes the snapshot's surviving entries overlaid with this run's, unless that would rewrite the cache
