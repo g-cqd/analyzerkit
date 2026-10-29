@@ -199,7 +199,8 @@ public struct ProjectClassification: Sendable {
     /// The region of the file at `path` (canonical) from the project, or from path conventions when no project claims
     /// it.
     public func classify(_ path: String) -> FileClassification {
-        let packageDirectory = innermostPackage(of: path)
+        let ancestors = Self.ancestors(of: path)
+        let packageDirectory = ancestors.dropFirst().first { packages[$0] != nil }
         if let packageDirectory, Self.isManifest(path, in: packageDirectory) {
             return FileClassification(region: .script, provenance: .manifest)
         }
@@ -227,7 +228,7 @@ public struct ProjectClassification: Sendable {
                 if packageDirectory == nil { unknown = unknown ?? project.container }
                 continue
             }
-            for ancestor in Self.ancestors(of: path) {
+            for ancestor in ancestors {
                 for membership in model.memberships[ancestor] ?? []
                 where !membership.excluded.contains(where: { Self.isAtOrUnder(path, $0) }) {
                     targets.insert(project.targets[membership.target])
@@ -295,10 +296,6 @@ public struct ProjectClassification: Sendable {
     }
 
     // MARK: Paths
-
-    private func innermostPackage(of path: String) -> String? {
-        Self.ancestors(of: path).dropFirst().first { packages[$0] != nil }
-    }
 
     private static func isManifest(_ path: String, in directory: String) -> Bool {
         guard ProjectPaths.parent(path) == directory else { return false }
