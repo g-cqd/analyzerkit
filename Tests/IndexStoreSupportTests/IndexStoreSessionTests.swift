@@ -55,8 +55,14 @@
                     "-module-name", module, "-parse-as-library", "-emit-module", "-emit-module-path",
                     root + "/modules/" + module + ".swiftmodule",
                 ]
-                if relative { arguments += ["-file-prefix-map", root + "=."] }
-                arguments += sources.map { root + "/" + $0 }
+                if relative {
+                    // swiftc sees the temporary directory as /private/var/…, so both spellings are mapped, and the
+                    // sources are given relative to the working directory.
+                    arguments += ["-file-prefix-map", root + "=.", "-file-prefix-map", "/private" + root + "=."]
+                    arguments += sources
+                } else {
+                    arguments += sources.map { root + "/" + $0 }
+                }
                 try #require(run(toolchain.swiftc, arguments, in: root) != nil, "swiftc failed")
             }
 
