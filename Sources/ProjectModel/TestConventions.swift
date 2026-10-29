@@ -33,6 +33,15 @@ public enum TestConventions {
         }
     }
 
+    /// Whether the file imports a test framework: code only tests can link.
+    public static func importsTestFramework(_ tree: SourceFileSyntax) -> Bool {
+        tree.statements.contains { item in
+            guard let importDecl = item.item.as(ImportDeclSyntax.self), let module = importDecl.path.first?.name.text
+            else { return false }
+            return testModules.contains(module)
+        }
+    }
+
     /// Whether the path alone marks test code.
     public static func isTestPath(_ path: String) -> Bool {
         let components = path.split(separator: "/")
