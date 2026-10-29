@@ -10,7 +10,13 @@ public enum SyntaxDepth {
     public static let defaultLimit = 20_000
 
     /// Whether `tree` nests deeper than `limit` levels.
+    /// - Complexity: O(*n*) in the nodes visited, with an explicit stack; it stops at the first node past `limit`.
     public static func exceeds(_ tree: some SyntaxProtocol, limit: Int = defaultLimit) -> Bool {
-        false
+        var pending: [(node: Syntax, depth: Int)] = [(Syntax(tree), 1)]
+        while let (node, depth) = pending.popLast() {
+            if depth > limit { return true }
+            for child in node.children(viewMode: .sourceAccurate) { pending.append((child, depth + 1)) }
+        }
+        return false
     }
 }
