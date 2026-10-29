@@ -1,12 +1,12 @@
 {
-  "originHash" : "9d7935e998607a7f7e5aff7e290c54b0317abd0aa81e7a2bf903890238285d33",
+  "originHash" : "32a0115697bf971f7e2b4cece2978dab0296948281403e385c0bafc37f9f4bb1",
   "pins" : [
     {
       "identity" : "aemi",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Aemi-Studio/aemi.git",
       "state" : {
-        "revision" : "f6da05cd0efdf60700e854efb5b6092eae89b8c5"
+        "revision" : "04e49d108e43a94fac449f344bfca9eabc5be0e9"
       }
     },
     {
@@ -14,7 +14,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/g-cqd/AemiJSON.git",
       "state" : {
-        "revision" : "5542d37ff0edb17c822b48fe69bff6e792354c57"
+        "revision" : "9a7d4450ff518a390613821913ba85c6a6944521"
       }
     },
     {

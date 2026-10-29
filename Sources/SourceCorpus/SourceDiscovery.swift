@@ -21,6 +21,26 @@ public enum SourceDiscovery {
     /// Hidden entries (a leading `.`) are skipped as well.
     public static let skippedComponents: Set<String> = [".build", ".git", "DerivedData", ".swiftpm", "checkouts"]
 
+    /// What a walk found.
+    public struct Discovery: Sendable, Equatable {
+        /// The files, absolute, spelled through the directory as given, sorted.
+        public let files: [String]
+        /// Directories that could not be listed, spelled like the files, sorted. They contribute nothing.
+        public let unreadableDirectories: [String]
+        /// Entries the directory listing did not type, so they were stat'ed; zero on APFS and ext4.
+        public let statCalls: Int
+    }
+
+    /// Every `.swift` file under `directory` that `isExcluded` keeps, with what the walk could not read.
+    public static func discover(
+        under directory: String,
+        isExcluded: @escaping @Sendable (String) -> Bool = { _ in false }
+    ) -> Discovery {
+        // Red stub (roadmap 0007): today's walk, which stats every entry and cannot tell an unreadable directory.
+        let files = swiftFiles(under: directory, isExcluded: isExcluded)
+        return Discovery(files: files, unreadableDirectories: [], statCalls: -1)
+    }
+
     /// Every `.swift` file under `directory` that `isExcluded` keeps, sorted.
     ///
     /// Paths are absolute and spelled through `directory` as given; ``SourcePath`` canonicalizes them for
