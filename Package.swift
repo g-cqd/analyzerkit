@@ -114,6 +114,8 @@ let package = Package(
                 "SourceCorpus",
                 .product(name: "AemiFileSystem", package: "aemi"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
+                // Package manifests are read as syntax, never run (ADR-0024).
+                .product(name: "SwiftParser", package: "swift-syntax"),
             ],
             swiftSettings: strictSwiftSettings
         ),
