@@ -21,9 +21,12 @@ import Testing
                 "dolly: configuration: exclude combined from \(shared), \(shared)#dolly",
                 "dolly: configuration: includeRegions from \(root.path)/.dolly.json, over \(shared)",
             ])
+        // A repository with no configuration: the lookup stops at its root.
+        let empty = root.appending(path: "empty")
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        try Data("gitdir: none\n".utf8).write(to: empty.appending(path: ".git"))
         let none = try SharedConfiguration.resolve(
-            for: tool, explicit: nil, currentDirectory: root.appending(path: "empty").path,
-            analyzedPaths: [root.appending(path: "empty").path])
+            for: tool, explicit: nil, currentDirectory: empty.path, analyzedPaths: ["."])
         #expect(none.verboseLines(tool: "dolly") == ["dolly: configuration: no file found; built-in defaults"])
     }
 }
