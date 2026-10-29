@@ -18,12 +18,17 @@ public enum RepositoryRoot {
     /// worktree or submodule, where `.git` is a pointer). Nil outside a repository.
     /// - Complexity: O(*d*) `stat` calls in the path's depth.
     public static func detect(from path: String) -> String? {
+        detect(from: path, probing: gitEntryExists)
+    }
+
+    /// ``detect(from:)`` with the `.git` existence check supplied, so tests can count the probes.
+    static func detect(from path: String, probing exists: (String) -> Bool) -> String? {
         var directory = URL(fileURLWithPath: path).standardized
         if directory.pathExtension == "swift" || !directory.hasDirectoryPath {
             directory = directory.deletingLastPathComponent()
         }
         while directory.path != "/" && !directory.path.isEmpty {
-            if FileManager.default.fileExists(atPath: directory.appendingPathComponent(".git").path) {
+            if exists(directory.appendingPathComponent(".git").path) {
                 return directory.path
             }
             let parent = directory.deletingLastPathComponent()
@@ -33,12 +38,19 @@ public enum RepositoryRoot {
         return nil
     }
 
+    private static func gitEntryExists(_ path: String) -> Bool { FileManager.default.fileExists(atPath: path) }
+
     /// The root shared by every file in `corpus`, or nil if they disagree: the corpus spans repositories
     /// (or none), and no single anchor makes every fingerprint portable.
     public static func common(of corpus: [String]) -> String? {
+        common(of: corpus, probing: gitEntryExists)
+    }
+
+    /// ``common(of:)`` with the `.git` existence check supplied, so tests can count the probes.
+    static func common(of corpus: [String], probing exists: (String) -> Bool) -> String? {
         var found: String?
         for path in corpus {
-            guard let root = detect(from: path) else { return nil }
+            guard let root = detect(from: path, probing: exists) else { return nil }
             if let found, found != root { return nil }
             found = root
         }
