@@ -27,7 +27,8 @@ Measured similarity between the tools' copies (research `2026-10-29-surface-and-
 | `ControlFlow` | stays; modeler adopts it | fcheck, modeler |
 
 Not moved: deadwood's and dolly's parallel graph primitives (two consumers, tuned apart); each tool's rules, facts,
-configuration types and `ToolInfo`. `FNV1a` copies are replaced by AemiKernel's `XXH64` where they fingerprint.
+configuration types and `ToolInfo`. `FNV1a` copies are replaced by AemiKernel's `XXH64` where a hash is not persisted by a consumer; baseline
+fingerprints keep their hash (ADR-0017).
 
 ## Consequences
 
