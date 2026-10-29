@@ -39,7 +39,8 @@ let package = Package(
         .target(
             name: "ProjectModel",
             dependencies: [
-                .product(name: "SwiftSyntax", package: "swift-syntax")
+                "SourceCorpus",
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
             ],
             swiftSettings: strictSwiftSettings
         ),
