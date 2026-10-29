@@ -112,6 +112,30 @@
             }
         }
 
+        /// A store the user cannot write to (a shared DerivedData, a CI artifact) opens, since nothing is written to it.
+        /// Written after the implementation, as a guard: it passed on its first run.
+        @Test func `a read-only store opens`() throws {
+            try tree { t in
+                let hub = try t.file("src/Hub.swift", "class Hub {\n    init() {}\n}\n")
+                try t.index(["src/Hub.swift"], into: "store")
+                let store = t.root + "/store"
+                let paths = [store] + (FileManager.default.subpaths(atPath: store) ?? []).map { store + "/" + $0 }
+                for path in paths {
+                    try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: path)
+                }
+                defer {
+                    for path in paths {
+                        try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path)
+                    }
+                }
+                guard case .usable(let session) = try open(t, "store", [hub]) else {
+                    Issue.record("a read-only store did not open")
+                    return
+                }
+                #expect(session.coverage.isUsable)
+            }
+        }
+
         @Test func `a path that is not a store is refused, and neither it nor the cache root gets anything`() throws {
             try tree { t in
                 let hub = try t.file("src/Hub.swift", "class Hub {}\n")
