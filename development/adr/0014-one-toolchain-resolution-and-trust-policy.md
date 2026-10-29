@@ -25,3 +25,11 @@ current user. Both hard-code `/Applications/Xcode.app` and ignore `xcode-select`
 ## Consequences
 
 - Xcode-beta and xcodes-named installations work; a machine without Command Line Tools works.
+
+## Implementation boundary (2026-10-29)
+
+Roadmap 0009 supplies one ordered resolver and trust policy in IndexStoreSupport, adopted by both tools. The parent
+check means the immediate resolved containing directory, not every ancestor. The policy is defense in depth for a
+developer CLI, not a sandbox or a race-free dlopen authorization mechanism. Explicit library overrides use it too.
+Verbose diagnostics describe selection, not a successful load or index coverage. Store-unit compiler identity notes
+(item 3) and the bounded process executor are integrated with the reader in roadmap 0010.
