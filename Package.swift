@@ -78,7 +78,10 @@ let package = Package(
                 "Suppression", .product(name: "SwiftParser", package: "swift-syntax"),
             ], swiftSettings: strictSwiftSettings),
         .target(
-            name: "IndexStoreSupport", dependencies: ["SourceCorpus", "ProjectModel", "ReportSupport"],
+            name: "IndexStoreSupport",
+            dependencies: [
+                "SourceCorpus", "ProjectModel", "ReportSupport", .product(name: "AemiKernel", package: "aemi"),
+            ],
             swiftSettings: strictSwiftSettings),
         .testTarget(
             name: "IndexStoreSupportTests", dependencies: ["IndexStoreSupport", "ProjectModel", "ReportSupport"],
