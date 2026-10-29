@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: in-progress
 blocked-by: []
 date: 2026-10-29
 ---
@@ -21,3 +21,10 @@ Red: the corresponding probes (`ArcleakFakeIndexProbe.swift`, `index-fixtures.sh
 
 Acceptance: patches published; the reference app and the g-cqd lock bumped (one line each, 0031, 0032); no other finding changes on
 the golden corpora.
+
+## Progress
+
+Code done, red then green, pushed to each `main` (diary 2026-10-29-08): fcheck `7384041`…`7772bef` (K1, K2 through the
+analyzerkit pin; F7), arcleak `cd25c6c`…`c36b2f4` (A2 in both its forms, A4, A6), deadwood `01351b8`…`c8fbbc0` (D4, D1).
+Release notes drafted (research `2026-10-29-wave-0-release-notes.md`). Not done: tagging the three releases, and the
+consumer bumps, which wait for the owner and a reference app branch run (ADR-0015 item 5).
