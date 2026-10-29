@@ -19,13 +19,15 @@ public struct ScannedFile<Facts: Sendable>: Sendable {
     public let failure: String?
 }
 
-/// What ``CorpusScanner/scan(paths:cacheURL:identity:salt:width:extract:)`` found.
+/// What ``CorpusScanner/scan(paths:cache:identity:salt:width:extract:)`` found.
 public struct CorpusScan<Facts: Codable & Sendable>: Sendable {
     /// One entry per distinct canonical path, sorted by path.
     public let files: [ScannedFile<Facts>]
     public let cacheHits: Int
     public var cacheMisses: Int { files.count - cacheHits }
-    /// See ``FactsCache/loadFailure``.
+    /// How many source files were opened and read: a warm run whose stat keys match reads none.
+    public let filesRead: Int
+    /// Why the cache, or part of it, was not used, when that is worth telling the user.
     public let cacheLoadFailure: String?
 }
 
@@ -44,7 +46,7 @@ public enum CorpusScanner {
     ///
     /// - Parameters:
     ///   - paths: the files, in any spelling; they are canonicalized and deduplicated.
-    ///   - cacheURL: the cache file, or nil for no cache.
+    ///   - cache: where the cache lives and which workspace it serves, or nil for no cache.
     ///   - identity: the build reading and writing the cache; nil trusts no cache.
     ///   - salt: what else the facts depend on, mixed into every fingerprint.
     ///   - width: the most files in flight; below one behaves as one.
@@ -53,28 +55,22 @@ public enum CorpusScanner {
     /// - Complexity: O(*n*) in the corpus size over `width` workers, plus the cache's load and persist.
     public static func scan<Facts: Codable & Sendable>(
         paths: [String],
-        cacheURL: URL? = nil,
-        identity: FactsCache<Facts>.Identity? = nil,
+        cache: CacheLocation? = nil,
+        identity: CacheIdentity? = nil,
         salt: String = "",
         width: Int = ProcessInfo.processInfo.activeProcessorCount,
         extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
     ) async throws -> CorpusScan<Facts> {
+        // Red stub (roadmap 0016): no cache.
         let canonical = SourcePath.canonicalized(paths)
-        let snapshot = cacheURL.map { FactsCache<Facts>.load(url: $0, identity: identity) } ?? FactsCache<Facts>()
         let files = try await mapConcurrently(canonical, limit: width) { path in
-            await outcome(for: path, snapshot: snapshot, salt: salt, extract: extract)
+            await outcome(for: path, salt: salt, extract: extract)
         }.sorted { $0.path < $1.path }
-
-        let hits = files.reduce(0) { $0 + ($1.cacheHit ? 1 : 0) }
-        if let cacheURL {
-            persist(files, hits: hits, snapshot: snapshot, to: cacheURL, identity: identity)
-        }
-        return CorpusScan(files: files, cacheHits: hits, cacheLoadFailure: snapshot.loadFailure)
+        return CorpusScan(files: files, cacheHits: 0, filesRead: files.count, cacheLoadFailure: nil)
     }
 
     private static func outcome<Facts: Codable & Sendable>(
         for path: String,
-        snapshot: FactsCache<Facts>,
         salt: String,
         extract: @escaping @Sendable (String, [UInt8]) -> Facts
     ) async -> ScannedFile<Facts> {
@@ -85,42 +81,7 @@ public enum CorpusScanner {
             return ScannedFile(path: path, facts: nil, fingerprint: nil, cacheHit: false, failure: "\(error)")
         }
         let fingerprint = ContentFingerprint.of(bytes, salt: salt)
-        if let cached = snapshot.facts(for: path, fingerprint: fingerprint) {
-            return ScannedFile(path: path, facts: cached, fingerprint: fingerprint, cacheHit: true, failure: nil)
-        }
-        // Extraction parses and walks a syntax tree, which recurses once per level; a cache hit does neither, so only
-        // a miss pays for a thread with a large stack (roadmap 0041).
         let facts = await LargeStack.run { extract(path, bytes) }
         return ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: false, failure: nil)
-    }
-
-    /// Writes the snapshot's surviving entries overlaid with this run's, unless that would rewrite the cache
-    /// exactly as it is: every file hit, nothing pruned, and the old cache loaded cleanly (a cache that failed
-    /// to load must be replaced even when this run parsed nothing, or every later run would report it again).
-    private static func persist<Facts: Codable & Sendable>(
-        _ files: [ScannedFile<Facts>],
-        hits: Int,
-        snapshot: FactsCache<Facts>,
-        to url: URL,
-        identity: FactsCache<Facts>.Identity?
-    ) {
-        var persisted = FactsCache<Facts>()
-        var current: Set<String> = []
-        current.reserveCapacity(files.count)
-        for file in files {
-            guard let facts = file.facts, let fingerprint = file.fingerprint else { continue }
-            persisted.update(path: file.path, fingerprint: fingerprint, facts: facts)
-            current.insert(file.path)
-        }
-        var pruned = false
-        for (path, entry) in snapshot.entries where !current.contains(path) {
-            if FileManager.default.fileExists(atPath: path) {
-                persisted.update(path: path, fingerprint: entry.fingerprint, facts: entry.facts)
-            } else {
-                pruned = true
-            }
-        }
-        let unchanged = hits == files.count && !pruned && snapshot.loadFailure == nil && !snapshot.entries.isEmpty
-        if !unchanged { persisted.persist(url: url, identity: identity) }
     }
 }
