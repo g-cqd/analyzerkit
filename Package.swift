@@ -18,6 +18,7 @@ let package = Package(
     name: "analyzerkit",
     platforms: [.macOS(.v15)],
     products: [
+        .library(name: "Suppression", targets: ["Suppression"]),
         .library(name: "IndexStoreSupport", targets: ["IndexStoreSupport"]),
         .library(name: "ProjectModel", targets: ["ProjectModel"]),
         .library(name: "SourceCorpus", targets: ["SourceCorpus"]),
@@ -34,6 +35,17 @@ let package = Package(
         .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "5542d37ff0edb17c822b48fe69bff6e792354c57"),
     ],
     targets: [
+        .target(
+            name: "Suppression",
+            dependencies: [
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "AemiKernels", package: "aemi"),
+            ], swiftSettings: strictSwiftSettings),
+        .testTarget(
+            name: "SuppressionTests",
+            dependencies: [
+                "Suppression", .product(name: "SwiftParser", package: "swift-syntax"),
+            ], swiftSettings: strictSwiftSettings),
         .target(name: "IndexStoreSupport", dependencies: ["SourceCorpus"], swiftSettings: strictSwiftSettings),
         .testTarget(
             name: "IndexStoreSupportTests", dependencies: ["IndexStoreSupport"], swiftSettings: strictSwiftSettings),
