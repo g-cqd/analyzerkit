@@ -14,6 +14,9 @@ The benchmark packages of arcleak, deadwood and dolly depend on their tool throu
 measure the pushed `main`, never the working tree a change is made in; they move to `path: ".."` (diary 2026-10-29-04). Their
 `Package.resolved` had drifted below their own manifest (package-benchmark 1.36 against `from: "1.38.0"`) until 0002.
 
+Include ProjectLayout lookup outside a repository with a very large ancestor directory; avoid an uninvalidated global
+cache as a shortcut (diary 2026-10-29-11). Measure both first-use discovery and ordinary repository-bound discovery.
+
 Red: thresholds set from the measured baseline minus the targeted gain fail before the speed entries (0004, 0007, 0016,
 0017, 0024, 0025, 0027) land.
 

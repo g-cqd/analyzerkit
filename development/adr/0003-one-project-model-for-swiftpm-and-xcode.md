@@ -18,9 +18,10 @@ package (probes A5, D6). Two worktrees of one project have DerivedData folders w
 
 `ProjectModel` gains `ProjectLayout`, used by every tool for every feature:
 
-1. The root comes from the analyzed path arguments (their common directory), walking up to the first of `.xcworkspace`,
-   `.xcodeproj`, `Package.swift` at the repository level, or `.git` (a directory or a worktree file). A nested
-   `Package.swift` below a workspace or project does not become the root.
+1. The root comes from the canonical analyzed path arguments (their common directory), walking up to the repository
+   boundary (`.git`, a directory or a worktree file). Choose the outermost ancestor holding an `.xcworkspace` or
+   `.xcodeproj`, otherwise the outermost holding `Package.swift`, otherwise the repository root, otherwise the common
+   directory. A nested `Package.swift` below a workspace or project does not become the root.
 2. The layout lists its packages (every `Package.swift`), Xcode containers, and the repository root.
 3. DerivedData is matched by `info.plist` `WorkspacePath` equal to one of the layout's containers, newest first; a
    `-derivedDataPath` root (no `<Project>-<hash>` level) is accepted wherever DerivedData is.
