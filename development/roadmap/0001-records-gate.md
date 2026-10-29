@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 blocked-by: []
 date: 2026-10-29
 ---
@@ -16,3 +16,9 @@ the layout in 0036.
 Red: each rule tested against records that break it on purpose; the rules fail on a stub that finds nothing.
 
 Acceptance: green on this repository's records, on Linux and macOS CI.
+
+## Done
+
+`Tests/RepositoryTests` (diary 2026-10-29-03). The test of the rules failed on a stub that found nothing (commit "test: red
+— the documentation law as tests"), then passed with the rules. Broken on purpose once against the real records (an ADR
+status, a reference to an ADR numbered 0099, which does not exist, a roadmap entry blocked by finished work): all three reported, then restored from a copy.
