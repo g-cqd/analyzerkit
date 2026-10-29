@@ -30,6 +30,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
+        // The option groups every analyzer's command line shares (AnalyzerCLI); the tools already use it.
+        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.8.2"),
         // The byte kernels, POSIX file and bounded-concurrency primitives `SourceCorpus` is built on.
         .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "f6da05cd0efdf60700e854efb5b6092eae89b8c5"),
         // The JSON coder behind the per-file facts cache.
@@ -38,9 +40,16 @@ let package = Package(
     targets: [
         // What every analyzer's command line shares: exit statuses and when a run fails (ADR-0018), then the option
         // groups of ADR-0006.
-        .target(name: "AnalyzerCLI", dependencies: ["ProjectModel"], swiftSettings: strictSwiftSettings),
+        .target(
+            name: "AnalyzerCLI",
+            dependencies: ["ProjectModel", .product(name: "ArgumentParser", package: "swift-argument-parser")],
+            swiftSettings: strictSwiftSettings),
         .testTarget(
-            name: "AnalyzerCLITests", dependencies: ["AnalyzerCLI", "ProjectModel"], swiftSettings: strictSwiftSettings),
+            name: "AnalyzerCLITests",
+            dependencies: [
+                "AnalyzerCLI", "ProjectModel", .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ],
+            swiftSettings: strictSwiftSettings),
         .target(
             name: "Suppression",
             dependencies: [
