@@ -26,13 +26,17 @@ public enum SourcePath {
     /// Canonicalizes every path and drops repeats, keeping first-seen order so the corpus is deterministic
     /// for a given argument list.
     /// - Complexity: O(*n*) canonicalizations and hash insertions.
-    public static func canonicalized(_ paths: [String]) -> [String] {
+    public static func canonicalized(_ paths: [String]) -> [String] { canonicalized(paths, resolve: canonical) }
+
+    /// ``canonicalized(_:)`` with the full resolution given, so a test can count it. Red stub (roadmap 0016): every path
+    /// is resolved whole.
+    static func canonicalized(_ paths: [String], resolve: (String) -> String) -> [String] {
         var seen: Set<String> = []
         seen.reserveCapacity(paths.count)
         var result: [String] = []
         result.reserveCapacity(paths.count)
         for path in paths {
-            let canonical = canonical(path)
+            let canonical = resolve(path)
             if seen.insert(canonical).inserted {
                 result.append(canonical)
             }
