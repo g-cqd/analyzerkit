@@ -19,11 +19,17 @@ public struct BaselineFile: Codable, Sendable, Equatable {
     public let version: Int?
 
     public init(tool: String, fingerprints: some Sequence<String>, versioned: Bool) {
-        self.fingerprints = Array(fingerprints)
+        self.fingerprints = Set(fingerprints).sorted()
         self.tool = tool
-        version = nil
+        version = versioned ? 1 : nil
     }
 
     /// A decoded baseline this version of the tools can use: version 1, or no version where the tool writes none.
-    public func validated(requiringVersion: Bool) throws(Failure) -> BaselineFile { self }
+    public func validated(requiringVersion: Bool) throws(Failure) -> BaselineFile {
+        switch version {
+        case 1: return self
+        case nil: if requiringVersion { throw .missingVersion } else { return self }
+        case let other?: throw .unsupportedVersion(other)
+        }
+    }
 }
