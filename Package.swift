@@ -38,6 +38,11 @@ let package = Package(
         // The byte kernels, POSIX file and bounded-concurrency primitives `SourceCorpus` is built on.
         .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "bfc4f5a701e8d80e5c63b13f606b578c5c0410c0"),
         // The JSON coder behind the per-file facts cache.
+        // Subprocess runs the toolchain probes and index builds (IndexStoreSupport's BoundedProcess): a child in a session of
+        // its own, torn down with its descendants. Its Foundation trait is not needed. swift-system supplies `FilePath` off
+        // Apple platforms, as Subprocess itself uses it.
+        .package(url: "https://github.com/swiftlang/swift-subprocess.git", from: "1.0.2", traits: []),
+        .package(url: "https://github.com/apple/swift-system.git", from: "1.5.0"),
         // IndexStoreDB opens index stores for IndexStoreSupport, on macOS only. No semver tags: pinned to one revision, which
         // arcleak and deadwood must pin too (SwiftPM resolves one revision per package in a graph).
         .package(
@@ -86,6 +91,8 @@ let package = Package(
             dependencies: [
                 "SourceCorpus", "ProjectModel", "ReportSupport", .product(name: "AemiKernel", package: "aemi"),
                 .product(name: "IndexStoreDB", package: "indexstore-db", condition: .when(platforms: [.macOS])),
+                .product(name: "Subprocess", package: "swift-subprocess"),
+                .product(name: "SystemPackage", package: "swift-system", condition: .when(platforms: [.linux])),
             ],
             swiftSettings: strictSwiftSettings),
         .testTarget(
