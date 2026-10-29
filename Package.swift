@@ -19,6 +19,7 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "AnalyzerCLI", targets: ["AnalyzerCLI"]),
+        .library(name: "AnalyzerConfiguration", targets: ["AnalyzerConfiguration"]),
         .library(name: "Suppression", targets: ["Suppression"]),
         .library(name: "IndexStoreSupport", targets: ["IndexStoreSupport"]),
         .library(name: "ProjectModel", targets: ["ProjectModel"]),
@@ -38,6 +39,15 @@ let package = Package(
         .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "5542d37ff0edb17c822b48fe69bff6e792354c57"),
     ],
     targets: [
+        // The configuration every analyzer reads: one directory, the shared `.swift-analyzers.json` and the tool's own
+        // file, merged, every key checked (ADR-0020).
+        .target(
+            name: "AnalyzerConfiguration",
+            dependencies: ["ProjectModel", "SourceCorpus", .product(name: "AemiJSONCore", package: "AemiJSON")],
+            swiftSettings: strictSwiftSettings),
+        .testTarget(
+            name: "AnalyzerConfigurationTests", dependencies: ["AnalyzerConfiguration"],
+            swiftSettings: strictSwiftSettings),
         // What every analyzer's command line shares: exit statuses and when a run fails (ADR-0018), then the option
         // groups of ADR-0006.
         .target(
