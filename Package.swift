@@ -49,6 +49,7 @@ let package = Package(
             dependencies: [
                 "AnalyzerCLI", "ProjectModel", .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
+            exclude: ["Goldens"],
             swiftSettings: strictSwiftSettings),
         .target(
             name: "Suppression",
