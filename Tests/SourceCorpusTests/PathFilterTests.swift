@@ -133,6 +133,17 @@ import Testing
         }
     }
 
+    @Test func `a root named through a link anchors both spellings of a path`() throws {
+        try Scratch.with { scratch in
+            let real = try scratch.write("real/Sources/A.swift")
+            try scratch.link("alias", to: scratch.path("real"))
+            let filter = PathFilter(["/Sources/*.swift"], root: scratch.path("alias"))
+            let spelled = scratch.path("alias/Sources/A.swift")
+            let canonical = SourcePath.canonical(real)
+            #expect(filter.excludes(spelled) && filter.excludes(canonical))
+        }
+    }
+
     @Test func `the files a configuration keeps`() throws {
         try Scratch.with { scratch in
             for file in Self.fixture { try scratch.write(file) }
