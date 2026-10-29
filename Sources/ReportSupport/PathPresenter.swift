@@ -7,14 +7,21 @@ internal import SourceCorpus
 public struct PathPresenter: Sendable {
     /// The canonical directory, as `SourcePath` spells analyzed files.
     public let root: String
+    private let prefix: String
 
+    /// - Parameter root: the directory, canonicalized here as every analyzer canonicalizes its corpus.
     public init(root: String) {
-        self.root = root
+        self.root = SourcePath.canonical(root)
+        prefix = self.root.hasSuffix("/") ? self.root : self.root + "/"
     }
 
     /// `path` relative to ``root`` when inside it, else unchanged.
-    public func path(_ path: String) -> String { path }
+    public func path(_ path: String) -> String {
+        path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : path
+    }
 
     /// `text` with every occurrence of ``root`` followed by a separator removed.
-    public func text(_ text: String) -> String { text }
+    public func text(_ text: String) -> String {
+        text.replacing(prefix, with: "")
+    }
 }
