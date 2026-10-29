@@ -132,8 +132,8 @@ public enum ToolchainResolution {
         return Outcome(libraryPath: nil, diagnostics: diagnostics)
     }
 
-    /// Synchronous probes for two small, fixed system commands, with an explicitly scrubbed environment. Does not
-    /// execute the Swift compiler. Process lifecycle/deadline consolidation belongs to roadmap 0010's executor.
+    /// Synchronous probes for two small, fixed system commands, with an explicitly scrubbed environment, through
+    /// ``BoundedProcess``: ten seconds at most, 4 KiB of output at most. Does not execute the Swift compiler.
     public static func systemProbe(_ executable: String, _ arguments: [String], _ environment: [String: String])
         -> String?
     {
@@ -142,20 +142,14 @@ public enum ToolchainResolution {
                 (executable == "/usr/bin/xcode-select" && arguments == ["-p"])
                     || (executable == "/usr/bin/xcrun" && arguments == ["--find", "swift"])
             else { return nil }
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: executable)
-            process.arguments = arguments
             var safe = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin"]
             for key in ["HOME", "DEVELOPER_DIR"] { safe[key] = environment[key] }
-            process.environment = safe
-            let output = Pipe()
-            process.standardOutput = output
-            process.standardError = FileHandle.nullDevice
-            guard (try? process.run()) != nil else { return nil }
-            let data = output.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
-            guard process.terminationStatus == 0, data.count <= 4096 else { return nil }
-            return String(data: data, encoding: .utf8)
+            guard
+                let result = try? BoundedProcess.runBlocking(
+                    executable, arguments, environment: safe, timeout: .seconds(10), outputLimit: 4096),
+                result.succeeded, !result.outputTruncated
+            else { return nil }
+            return result.standardOutputText
         #else
             return nil
         #endif
