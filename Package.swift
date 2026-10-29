@@ -18,6 +18,7 @@ let package = Package(
     name: "analyzerkit",
     platforms: [.macOS(.v15)],
     products: [
+        .library(name: "IndexStoreSupport", targets: ["IndexStoreSupport"]),
         .library(name: "ProjectModel", targets: ["ProjectModel"]),
         .library(name: "SourceCorpus", targets: ["SourceCorpus"]),
         .library(name: "CorpusScan", targets: ["CorpusScan"]),
@@ -33,6 +34,9 @@ let package = Package(
         .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "5542d37ff0edb17c822b48fe69bff6e792354c57"),
     ],
     targets: [
+        .target(name: "IndexStoreSupport", dependencies: ["SourceCorpus"], swiftSettings: strictSwiftSettings),
+        .testTarget(
+            name: "IndexStoreSupportTests", dependencies: ["IndexStoreSupport"], swiftSettings: strictSwiftSettings),
         // The shared model of a Swift project: entry points the system or the
         // test frameworks create, code regions, generated files, and the shared
         // report contract (scope, schema version).
