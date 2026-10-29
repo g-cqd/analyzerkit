@@ -94,14 +94,27 @@ extension ControlFlowGraph {
         #expect(partial.reaches(.threw))
     }
 
-    @Test func `a throw inside a catch body leaves the function`() {
+    @Test(arguments: ["catch let error", "catch var error", "catch _", "catch let _"])
+    func `a catch that only binds the error, or discards it, catches everything`(clause: String) throws {
+        let g = graph("func f() throws {\n do {\n  try a()\n } \(clause) {\n  recover()\n }\n}")
+        #expect(!g.reaches(.threw), "\(clause) lets the error through")
+        #expect(g.reaches(.fellOff))
+    }
+
+    @Test(arguments: ["catch let e as E", "catch is E", "catch E.a", "catch let e where e.isFatal", "catch let .a(x)"])
+    func `a catch that matches a type, a case or a condition does not catch everything`(clause: String) throws {
+        let g = graph("func f() throws {\n do {\n  try a()\n } \(clause) {\n  recover()\n }\n}")
+        #expect(g.reaches(.threw), "\(clause) stops every error")
+    }
+
+    @Test func `a throw inside a catch body leaves the function`() throws {
         let g = graph("func f() throws {\n do {\n  try a()\n } catch {\n  throw E()\n }\n}")
         #expect(g.reaches(.threw))
     }
 
-    @Test func `a loop returns to its head, break leaves it and continue repeats it`() {
+    @Test func `a loop returns to its head, break leaves it and continue repeats it`() throws {
         let g = graph("func f() {\n while c() {\n  if d() { break }\n  if e() { continue }\n  work()\n }\n done()\n}")
-        let head = g.nodes.first { $0.kind == .condition && $0.line == 2 }!
+        let head = try #require(g.nodes.first { $0.kind == .condition && $0.line == 2 })
         #expect(g.nodes.contains { $0.successors.contains { $0.kind == .back && $0.target == head.id } })
         #expect(g.lines(to: .fellOff) == [2, 7])
         #expect(
@@ -110,33 +123,95 @@ extension ControlFlowGraph {
                 allowing: { g.nodes[$0].line != 2 || $0 == head.id }) != nil)
     }
 
-    @Test func `break in a switch leaves the switch and not the loop around it`() {
+    @Test func `break in a switch leaves the switch and not the loop around it`() throws {
         let g = graph(
             "func f() {\n for x in xs {\n  switch x {\n  case 1:\n   break\n  default:\n   other()\n  }\n  after()\n }\n}"
         )
-        let after = g.nodes.first { $0.line == 9 }!
-        let breakNode = g.nodes.first { $0.line == 5 }!
+        let after = try #require(g.nodes.first { $0.line == 9 })
+        let breakNode = try #require(g.nodes.first { $0.line == 5 })
         #expect(g.reachable(from: breakNode.id).contains(after.id))
     }
 
-    @Test func `fatalError ends control without leaving by any exit`() {
+    @Test func `fatalError ends control without leaving by any exit`() throws {
         let g = graph("func f() {\n fatalError(\"no\")\n}")
         #expect(g.reaches(.terminated) && !g.reaches(.fellOff) && !g.reaches(.returned))
     }
 
-    @Test func `code after a return is not in the graph`() {
+    @Test func `code after a return is not in the graph`() throws {
         let g = graph("func f() {\n return\n unreachable()\n}")
         #expect(!g.nodes.contains { $0.line == 3 })
     }
 
-    @Test func `a labelled break leaves the outer loop`() {
+    @Test func `a labelled break leaves the outer loop`() throws {
         let g = graph(
             "func f() {\n outer: for a in xs {\n  for b in ys {\n   break outer\n  }\n  inner()\n }\n done()\n}")
-        let breakNode = g.nodes.first { $0.line == 4 }!
-        let inner = g.nodes.first { $0.line == 6 }!
-        let done = g.nodes.first { $0.line == 8 }!
+        let breakNode = try #require(g.nodes.first { $0.line == 4 })
+        let inner = try #require(g.nodes.first { $0.line == 6 })
+        let done = try #require(g.nodes.first { $0.line == 8 })
         let after = g.reachable(from: breakNode.id)
         #expect(after.contains(done.id) && !after.contains(inner.id))
+    }
+
+    @Test func `a for try await loop can throw from its head, and a for await loop cannot`() throws {
+        let throwing = graph("func f() async throws {\n for try await x in s {\n  use(x)\n }\n}")
+        #expect(throwing.reaches(.threw))
+        let head = try #require(throwing.nodes.first { $0.kind == .condition && $0.line == 2 })
+        #expect(head.successors.contains { $0.kind == .thrown })
+        #expect(!graph("func f() async {\n for await x in s {\n  use(x)\n }\n}").reaches(.threw))
+    }
+
+    @Test func `fallthrough runs the next case's body, not the statement after the switch`() throws {
+        let g = graph(
+            "func f() {\n switch x {\n case 1:\n  fallthrough\n case 2:\n  two()\n default:\n  other()\n }\n after()\n}"
+        )
+        let fall = try #require(g.nodes.first { $0.line == 4 })
+        let two = try #require(g.nodes.first { $0.line == 6 })
+        let after = try #require(g.nodes.first { $0.line == 10 })
+        #expect(fall.successors.map(\.target) == [two.id])
+        #expect(g.reachable(from: fall.id).contains(after.id), "the next case still ends the switch")
+    }
+
+    @Test func `fallthrough runs the defers of the case it leaves`() throws {
+        let g = graph(
+            "func f() {\n switch x {\n case 1:\n  defer { cleanup() }\n  fallthrough\n case 2:\n  two()\n default:\n  break\n }\n}"
+        )
+        let fall = try #require(g.nodes.first { $0.line == 5 })
+        let two = try #require(g.nodes.first { $0.line == 7 })
+        let route = try #require(g.path(from: fall.id, to: two.id))
+        #expect(route.contains { g.nodes[$0].isDeferred })
+    }
+
+    @Test(arguments: ["do", "if c"])
+    func `a labelled break leaves a labelled do or if`(statement: String) throws {
+        let g = graph(
+            "func f(_ c: Bool, _ d: Bool) {\n outer: \(statement) {\n  if d { break outer }\n  inside()\n }\n after()\n}"
+        )
+        let breakNode = try #require(g.nodes.first { $0.kind == .statement && $0.line == 3 })
+        let inside = try #require(g.nodes.first { $0.line == 4 })
+        let after = try #require(g.nodes.first { $0.line == 6 })
+        let reached = g.reachable(from: breakNode.id)
+        #expect(reached.contains(after.id), "break outer goes nowhere")
+        #expect(!reached.contains(inside.id))
+    }
+
+    @Test func `a labelled break out of a do runs its defers`() throws {
+        let g = graph(
+            "func f(_ d: Bool) {\n outer: do {\n  defer { cleanup() }\n  if d { break outer }\n  inside()\n }\n after()\n}"
+        )
+        let breakNode = try #require(g.nodes.first { $0.kind == .statement && $0.line == 4 })
+        let after = try #require(g.nodes.first { $0.line == 7 })
+        #expect(try #require(g.path(from: breakNode.id, to: after.id)).contains { g.nodes[$0].isDeferred })
+    }
+
+    @Test func `the label of an if does not name a loop inside it`() throws {
+        let g = graph(
+            "func f(_ c: Bool) {\n outer: if c {\n  for x in xs {\n   if x { break outer }\n   body()\n  }\n  tail()\n }\n after()\n}"
+        )
+        let breakNode = try #require(g.nodes.first { $0.kind == .statement && $0.line == 4 })
+        let tail = try #require(g.nodes.first { $0.line == 7 })
+        let after = try #require(g.nodes.first { $0.line == 9 })
+        let reached = g.reachable(from: breakNode.id)
+        #expect(reached.contains(after.id) && !reached.contains(tail.id), "break outer stopped at the inner loop")
     }
 
     @Test func `a repeat loop runs its body before testing`() {
