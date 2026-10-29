@@ -38,3 +38,6 @@ names.
 - Gain over `[String: UInt32]` for USR-like keys (60–200 bytes) and for short tokens; hash choice (XXH64 is in AemiKernel;
   a faster short-key hash may pay); merge cost against a lock-striped concurrent table. Roadmap 0015 measures all three
   before the API is fixed.
+
+Answered by measurement in roadmap 0015 (aemi's ADR 0019 and diary 2026-10-29-03): five times the dictionary on USRs and
+2.5 times on tokens; wyhash; the per-worker merge, not a lock-striped table.
