@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0016, 0043]
+blocked-by: [0043]
 date: 2026-10-29
 ---
 
@@ -16,3 +16,6 @@ pinned snapshot of a g-cqd package; the migrated tool must match them byte for b
 
 Acceptance: goldens green; the tool's suite green; its own copies of the replaced files deleted; timings on maintastic before
 and after in the tool's diary.
+
+From 0016: `CorpusScanner.scan` takes `cache: CacheLocation` (root from `--cache-path` or `CacheLocation.defaultRoot`, the
+workspace, the budget) and a `CacheIdentity`; `FactsCache` is gone, so the tool's own cache moves onto the container.

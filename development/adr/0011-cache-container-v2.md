@@ -35,3 +35,8 @@ from July), 140 MB for arcleak, 62 MB for dolly. `--cache-path` names a file; ma
 
 - Shard count and budget defaults (to be measured on maintastic and on the g-cqd packages).
 - Whether ctime is reliable enough on the CI file systems maintastic uses (self-hosted macOS runners).
+
+Answered (roadmap 0016, diary 2026-10-29-22): 32 shards gave a median shard of 176 KiB and a largest of 339 KiB on
+maintastic, so rewriting one costs a fraction of a millisecond; the 512 MiB budget holds dozens of workspaces at that
+size and is kept until a tool's real facts are measured (deadwood's exceed 64 MiB as JSON, 0017). ctime is in the key;
+its behaviour on the self-hosted CI runners is not checked yet.

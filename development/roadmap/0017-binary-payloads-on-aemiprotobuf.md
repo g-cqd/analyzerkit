@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0016, 0040]
+blocked-by: [0040]
 date: 2026-10-29
 ---
 
@@ -15,3 +15,6 @@ Red: a size budget per tool on a 3,000-file synthetic corpus (deadwood's JSON ex
 budget is set from the measurement); round-trip equality of every facts type.
 
 Acceptance: the measurement in the diary; deadwood writes a cache on maintastic and its warm run is faster than its cold run.
+
+From 0016: on a warm run the shards cost 2 ms and decoding every payload (JSON) 26–29 ms of 46 on maintastic; that
+decode is this item's target. The container takes payload bytes, so the codec changes in `CorpusScanner` alone.

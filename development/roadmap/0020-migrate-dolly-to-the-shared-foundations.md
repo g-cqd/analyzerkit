@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0016, 0043]
+blocked-by: [0043]
 date: 2026-10-29
 ---
 
@@ -19,3 +19,6 @@ and after in the tool's diary.
 
 Also (from 0014): with the shared output options, `--verbose` prints `SharedConfiguration.Resolved.verboseLines`;
 dolly discards them until then.
+
+From 0016: `CorpusScanner.scan` takes `cache: CacheLocation` (root from `--cache-path` or `CacheLocation.defaultRoot`, the
+workspace, the budget) and a `CacheIdentity`; `FactsCache` is gone, so the tool's own cache moves onto the container.
