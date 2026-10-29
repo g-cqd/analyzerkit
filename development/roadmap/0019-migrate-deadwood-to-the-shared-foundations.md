@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0010, 0016, 0043]
+blocked-by: [0016, 0043]
 date: 2026-10-29
 ---
 
@@ -16,3 +16,7 @@ pinned snapshot of a g-cqd package; the migrated tool must match them byte for b
 
 Acceptance: goldens green; the tool's suite green; its own copies of the replaced files deleted; timings on maintastic before
 and after in the tool's diary.
+
+From 0010: analyzerkit pins indexstore-db at `0390867` (upstream `main`); deadwood's `64aa0b2` must move with the
+analyzerkit bump. Its `ProcessExecutor` and `BinaryTrustChecker` forks go; `IndexStoreSession` replaces the reader's
+opening (database under the cache root, not beside the store).
