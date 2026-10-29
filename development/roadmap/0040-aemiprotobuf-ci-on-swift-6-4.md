@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-29
 ---
@@ -16,3 +16,11 @@ pinned by SHA), and `swift-format` from that toolchain. This is AemiProtobuf's w
 on AemiProtobuf being green.
 
 Acceptance: AemiProtobuf's CI green on a push.
+
+## Done
+
+Diary 2026-10-29-23. AemiProtobuf `a53a089`: every job reads `.swift-version` and installs that toolchain with
+`swift-actions/setup-swift` pinned by SHA (`364295d`, v3.0.0-beta.1); `Scripts/quality.sh` finds swift-format on PATH,
+then through `xcrun --find`, then as `swift format`. Run 40959879484: format/lint/analyzers, tests (debug and release),
+Lean/TLA+/modeler and the allocation thresholds green; mutation testing is not triggered on push. AemiProtobuf's own
+roadmap 0013 (`24527f3`) keeps Linux open: no job runs there.

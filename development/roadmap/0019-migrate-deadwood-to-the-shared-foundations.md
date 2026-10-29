@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0043]
+blocked-by: []
 date: 2026-10-29
 ---
 
@@ -24,3 +24,8 @@ opening (database under the cache root, not beside the store).
 
 From 0016: `CorpusScanner.scan` takes `cache: CacheLocation` (root from `--cache-path` or `CacheLocation.defaultRoot`, the
 workspace, the budget) and a `CacheIdentity`; `FactsCache` is gone, so the tool's own cache moves onto the container.
+
+From 0043: `ProjectClassification.load(layout)` once per run, then `classify(path, tree:)` per file, replaces the
+`TestConventions` and `GeneratedCode` calls in `DeadwoodCore` `Engine/TestScopeClassifier.swift` (deleted with its glob), `Engine/CorpusContext.swift`, `Engine/UnusedCodeConfiguration.swift`, `Engine/RootDetection.swift`, `Engine/Reachability/DependencyExtractor.swift`, `Cache/CachedFileFacts.swift`, `Facts/StaticAnalyzer.swift`, `Facts/Models/AnalysisResult.swift`. Its `issues(for:)` (`project-unknown`, `project-unclaimed`)
+become run notes. 0043's acceptance that every tool selects the same regions for the same fixture and configuration is
+checked here, by a shared fixture each migration runs.
