@@ -86,6 +86,9 @@ public enum SharedConfiguration {
             }
         }
 
+        /// What is wrong, without the path, for a tool that reports the two apart.
+        public var reason: String { "" }
+
         public var description: String {
             switch self {
             case .unreadable(let path, let reason): "cannot read \(path): \(reason)"
