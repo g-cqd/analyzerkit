@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0016, 0043]
+blocked-by: [0043]
 date: 2026-10-29
 ---
 
@@ -22,3 +22,6 @@ analyzerkit bump. `IndexStorePathFinder` skips `.build/out` as a store of relati
 writes absolute ones there (checked on analyzerkit's own build, diary 2026-10-29-21), and `IndexStoreSession` refuses a
 relative store by coverage anyway, so the shared discovery includes it.
 `ToolchainResolution.resolve()` is async since 0010 (it runs `xcode-select` and `xcrun` through `BoundedProcess`).
+
+From 0016: `CorpusScanner.scan` takes `cache: CacheLocation` (root from `--cache-path` or `CacheLocation.defaultRoot`, the
+workspace, the budget) and a `CacheIdentity`; `FactsCache` is gone, so the tool's own cache moves onto the container.

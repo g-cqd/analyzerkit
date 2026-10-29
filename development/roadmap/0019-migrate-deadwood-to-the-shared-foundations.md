@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0016, 0043]
+blocked-by: [0043]
 date: 2026-10-29
 ---
 
@@ -21,3 +21,6 @@ From 0010: analyzerkit pins indexstore-db at `0390867` (upstream `main`); deadwo
 analyzerkit bump. Its `ProcessExecutor` and `BinaryTrustChecker` forks go; `IndexStoreSession` replaces the reader's
 opening (database under the cache root, not beside the store).
 `ToolchainResolution.resolve()` is async since 0010 (it runs `xcode-select` and `xcrun` through `BoundedProcess`).
+
+From 0016: `CorpusScanner.scan` takes `cache: CacheLocation` (root from `--cache-path` or `CacheLocation.defaultRoot`, the
+workspace, the budget) and a `CacheIdentity`; `FactsCache` is gone, so the tool's own cache moves onto the container.
