@@ -35,6 +35,15 @@ complexity; all are linear in their input.
 | `ExitStatus`, `RunOutcome` | the six exit statuses of every analyzer and when a run fails (ADR-0018): an error, a warning under `--strict`, never a note; 70 when every file found was skipped |
 | `InputOptions`, `OutputOptions`, `RuleOptions`, `CacheOptions`, `IndexOptions`, `ExperimentalOptions` | the shared ArgumentParser option groups (ADR-0019), deprecated spellings folded in and reported as `Deprecation`s |
 
+## Library: `AnalyzerConfiguration`
+
+| API | Answers |
+| --- | --- |
+| `SharedConfiguration.resolve` | the configuration of one run (ADR-0021): one directory found by `stat` alone, `.swift-analyzers.json`'s top level and the tool's section, then the tool's own file, merged (`exclude` lists add up, objects merge key by key), every key checked, a key given twice refused; the merged JSON for the tool's own decoder |
+| `Resolved.verboseLines` | what `--verbose` prints: the files read and which source won each key set more than once |
+
+A sample shared file every tool reads: [`docs/.swift-analyzers.json`](docs/.swift-analyzers.json).
+
 ## Library: `IndexStoreSupport`
 
 | API | Answers |

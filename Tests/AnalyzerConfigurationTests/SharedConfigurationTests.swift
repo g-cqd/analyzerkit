@@ -183,4 +183,23 @@ import Testing
         }
     }
 
+    /// The sample users copy (`docs/.swift-analyzers.json`) is one every tool reads: read here with each tool's keys.
+    @Test func `the sample configuration in docs is valid for every tool`() throws {
+        let sample = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().appending(path: "docs/.swift-analyzers.json").path
+        let tools: [SharedConfiguration.Tool] = [
+            .init(name: "arcleak", fileName: ".arcleak.json", keys: ["rules", "debugBuild", "contracts"]),
+            .init(name: "deadwood", fileName: ".deadwood.json", keys: ["rules", "production", "testsGlob"]),
+            .init(name: "dolly", fileName: ".dolly.json", keys: ["rules", "duplication"]),
+            .init(
+                name: "fcheck", fileName: ".fcheck.json",
+                keys: ["disable", "severity", "resources", "flush", "includeTests"]),
+        ]
+        for tool in tools {
+            let resolved = try SharedConfiguration.resolve(
+                for: tool, explicit: sample, currentDirectory: "/", analyzedPaths: [])
+            #expect(resolved.sources.count == 2, "\(tool.name) reads the top level and its section")
+        }
+    }
+
 }
