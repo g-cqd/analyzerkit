@@ -20,7 +20,7 @@ unbuilt test is reported dead (D2).
 ## Decision
 
 1. Coverage is classified per file: `indexed`, `notIndexed` (no unit), `changedSinceBuild` (newer than its unit),
-   `unreadable`. Reports count and list them apart (ADR-0009 `skippedFiles`).
+   `unreadable`. Reports count and list them apart (ADR-0017 `skippedFiles`).
 2. The run-wide gate keeps one job: when no analyzed file is indexed, the index is not used ("the store does not describe
    these files; wrong path or wrong build"), which also guards against stores with relative unit paths.
 3. arcleak: a name declared anywhere in the corpus is never looked up; a lookup collects every type-kind definition of the
