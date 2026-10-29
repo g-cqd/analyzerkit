@@ -32,9 +32,9 @@ public struct ProjectLayout: Sendable, Equatable {
         var xcode: String?
         var package: String?
         while true {
-            let entries = (try? FileManager.default.contentsOfDirectory(atPath: cursor)) ?? []
-            if entries.contains(where: { isContainer($0) && isDirectory(join(cursor, $0)) }) { xcode = cursor }
-            if entries.contains("Package.swift") { package = cursor }
+            let markers = markers(in: cursor)
+            if markers.hasContainer { xcode = cursor }
+            if markers.hasPackage { package = cursor }
             if cursor == repository || cursor == "/" { break }
             cursor = URL(fileURLWithPath: cursor).deletingLastPathComponent().path
         }
@@ -59,6 +59,26 @@ public struct ProjectLayout: Sendable, Equatable {
         }
         return Self(
             root: root, repositoryRoot: repository, packages: packages.sorted(), containers: containers.sorted())
+    }
+
+    /// What one ancestor holds, and what finding it cost.
+    struct Markers: Equatable {
+        /// An `.xcodeproj` or `.xcworkspace` directory, or a link to one.
+        var hasContainer: Bool
+        /// An entry named `Package.swift`.
+        var hasPackage: Bool
+        /// Directories opened: the ancestor itself, and none of its subdirectories.
+        var directoriesOpened: Int
+        /// Entries stat'ed: those the listing did not type, and links named like a container.
+        var statCalls: Int
+    }
+
+    /// The ancestor `directory`'s markers. Red stub (roadmap 0007): today's listing, whose costs it cannot count.
+    static func markers(in directory: String) -> Markers {
+        let entries = (try? FileManager.default.contentsOfDirectory(atPath: directory)) ?? []
+        return Markers(
+            hasContainer: entries.contains { isContainer($0) && isDirectory(join(directory, $0)) },
+            hasPackage: entries.contains("Package.swift"), directoriesOpened: -1, statCalls: -1)
     }
 
     /// Matching stores, newest first by LastAccessedDate (directory modification time if absent), then path.

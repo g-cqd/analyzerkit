@@ -47,14 +47,26 @@ import Testing
         }
     }
 
-    @Test func `a link inside the root is followed and its files are listed once`() throws {
+    /// The target is reached at its own path, so the spelling does not depend on which name sorts first.
+    @Test func `a link inside the root lists its target once, at the target's own path`() throws {
+        try Scratch.with { scratch in
+            try populate(scratch)
+            try scratch.link("root/Alias", to: "Sources")
+            try scratch.link("root/Again.swift", to: "A.swift")
+            let root = scratch.path("root")
+            #expect(SourceDiscovery.swiftFiles(under: root) == realFiles(under: root))
+        }
+    }
+
+    /// Exclusion follows the real location: excluding a directory excludes it under every alias, and a link named like an
+    /// exclude pattern does not hide the directory it points to.
+    @Test func `an excluded directory stays excluded under an alias, and an alias cannot hide its target`() throws {
         try Scratch.with { scratch in
             try populate(scratch)
             try scratch.link("root/Alias", to: "Sources")
             let root = scratch.path("root")
-            let files = SourceDiscovery.swiftFiles(under: root)
-            #expect(files.count == 2)
-            #expect(Set(SourcePath.canonicalized(files)) == Set(SourcePath.canonicalized(realFiles(under: root))))
+            #expect(SourceDiscovery.swiftFiles(under: root) { $0.hasSuffix("/Sources/") } == [root + "/A.swift"])
+            #expect(SourceDiscovery.swiftFiles(under: root) { $0.hasSuffix("/Alias/") } == realFiles(under: root))
         }
     }
 
@@ -103,6 +115,32 @@ import Testing
                 $0.hasSuffix("/Sources/") || $0.hasSuffix("/A.swift")
             }
             #expect(found.isEmpty)
+        }
+    }
+
+    /// The listing gives each entry's type, so nothing is stat'ed on a file system that reports it (APFS, ext4).
+    @Test func `the walk stats no entry the directory listing already typed`() throws {
+        try Scratch.with { scratch in
+            for index in 0..<40 { try scratch.write("root/Module\(index % 4)/File\(index).swift") }
+            let discovery = SourceDiscovery.discover(under: scratch.path("root"))
+            #expect(discovery.files.count == 40)
+            #expect(discovery.statCalls == 0)
+            #expect(discovery.unreadableDirectories.isEmpty)
+        }
+    }
+
+    /// An unreadable directory contributes nothing, and says so: the analyzer can note it rather than drop it unseen.
+    @Test func `an unreadable directory is reported and the rest is listed`() throws {
+        try Scratch.with { scratch in
+            try populate(scratch)
+            try scratch.write("root/Locked/C.swift")
+            let locked = scratch.path("root/Locked")
+            try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: locked)
+            defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: locked) }
+            let root = scratch.path("root")
+            let discovery = SourceDiscovery.discover(under: root)
+            #expect(discovery.files == realFiles(under: root))
+            #expect(discovery.unreadableDirectories == [locked])
         }
     }
 
