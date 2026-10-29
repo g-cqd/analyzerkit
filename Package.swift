@@ -98,6 +98,8 @@ let package = Package(
             dependencies: ["CorpusScan", "SourceCorpus"],
             swiftSettings: strictSwiftSettings
         ),
+        // The repository's own rules: the documentation law of `development/WHITE-PAPER.md` (roadmap 0001).
+        .testTarget(name: "RepositoryTests", swiftSettings: strictSwiftSettings),
         .testTarget(
             name: "ProjectModelTests",
             dependencies: [
