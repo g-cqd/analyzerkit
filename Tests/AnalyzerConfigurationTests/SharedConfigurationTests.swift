@@ -135,4 +135,15 @@ import Testing
             #expect(throws: SharedConfiguration.Failure.self) { try resolve(root) }
         }
     }
+
+    @Test func `a failure gives its reason apart from its path`() {
+        #expect(
+            SharedConfiguration.Failure.unknownKey(path: "/p/.arcleak.json", key: "bogus").reason
+                == #"unknown key "bogus""#)
+        #expect(
+            SharedConfiguration.Failure.invalid(path: "/p", reason: "not a JSON object").reason == "not a JSON object")
+        #expect(SharedConfiguration.Failure.unreadable(path: "/p", reason: "no such file").reason == "no such file")
+        #expect(SharedConfiguration.Failure.unknownKey(path: "/p", key: "k").description == #"/p: unknown key "k""#)
+    }
+
 }
