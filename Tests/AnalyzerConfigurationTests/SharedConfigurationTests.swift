@@ -146,4 +146,19 @@ import Testing
         #expect(SharedConfiguration.Failure.unknownKey(path: "/p", key: "k").description == #"/p: unknown key "k""#)
     }
 
+    /// A repeated key would keep only its last value, a key silently dropped (ADR-0020 item 4), at any depth.
+    @Test func `a key given twice fails, at any depth`() throws {
+        for text in [
+            #"{"exclude": ["a"], "exclude": ["b"]}"#, #"{"arcleak": {"exclude": ["a"]}, "arcleak": {}}"#,
+            #"{"arcleak": {"rules": {"a": {"enabled": true}, "a": {"enabled": false}}}}"#,
+        ] {
+            try project([".swift-analyzers.json": text]) { root in
+                #expect(throws: SharedConfiguration.Failure.self, "\(text)") { try resolve(root) }
+            }
+        }
+        try project([".arcleak.json": #"{"exclude": [], "exclude": ["b"]}"#]) { root in
+            #expect(throws: SharedConfiguration.Failure.self) { try resolve(root) }
+        }
+    }
+
 }
