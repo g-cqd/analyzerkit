@@ -131,5 +131,6 @@ struct DocumentationLayoutTests {
         #expect(problems("See roadmap 0009.").count == 1)
         #expect(problems("See research `2026-10-29-missing.md`.").count == 1)
         #expect(problems("its roadmap 0018; AemiProtobuf's roadmap 0015; ask's ADR-0128").isEmpty)
+        #expect(problems("A reference looks like research `<file>.md`.").isEmpty, "a placeholder is not a reference")
     }
 }

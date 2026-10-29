@@ -44,7 +44,7 @@ pins move.
 Findings of the inventory:
 
 - Four copies of `analyzers.sh` at three version sets; aemi's workflow defaults are two releases behind.
-- AemiProtobuf roadmap 0015 ("fcheck and modeler publish no release archive") is stale: fcheck 0.1.1 and modeler 0.1.1
+- AemiProtobuf's roadmap 0015 ("fcheck and modeler publish no release archive") is stale: fcheck 0.1.1 and modeler 0.1.1
   publish both archives and bundles.
 - maintastic searches DerivedData for the index store itself because the tools could not (A5, A6).
 
