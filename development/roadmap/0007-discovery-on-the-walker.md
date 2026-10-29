@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0005, 0006]
+blocked-by: [0006]
 date: 2026-10-29
 ---
 
