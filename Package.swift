@@ -83,7 +83,7 @@ let package = Package(
         // What the SARIF and xcode reports of every analyzer say about a location.
         .target(
             name: "ReportSupport",
-            dependencies: ["SourceCorpus"],
+            dependencies: ["SourceCorpus", "ProjectModel"],
             swiftSettings: strictSwiftSettings
         ),
         // The control flow of a function body, with its throwing and `defer` exits, for the analyzers that check a
