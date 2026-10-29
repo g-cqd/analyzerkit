@@ -15,6 +15,9 @@
 public struct PathFilter: Sendable {
     /// The directory a glob's path is relative to: the project's root, without a trailing `/`.
     public let root: String?
+    /// The root as given and, when it differs, as it resolves: a walk asks about paths spelled through the root, an
+    /// analyzer about canonical ones (``SourcePath``), and an anchored glob must match both.
+    private let roots: [[UInt8]]
     private let substrings: [[UInt8]]
     private let globs: [Glob]
 
@@ -25,6 +28,12 @@ public struct PathFilter: Sendable {
         var root = root
         while let spelled = root, spelled.count > 1, spelled.hasSuffix("/") { root = String(spelled.dropLast()) }
         self.root = root
+        if let root {
+            let canonical = SourcePath.canonical(root)
+            roots = canonical == root ? [Array(root.utf8)] : [Array(root.utf8), Array(canonical.utf8)]
+        } else {
+            roots = []
+        }
         var substrings: [[UInt8]] = []
         var globs: [Glob] = []
         for entry in entries where !entry.isEmpty {
@@ -51,7 +60,7 @@ public struct PathFilter: Sendable {
         let bytes = Array(path.utf8)
         for needle in substrings where Self.contains(bytes, needle) { return true }
         guard !globs.isEmpty else { return false }
-        let query = Query(bytes, root: root)
+        let query = Query(bytes, roots: roots)
         return globs.contains { $0.matches(query) }
     }
 
@@ -84,21 +93,25 @@ extension PathFilter {
         /// Whether the components are relative to the root, which anchored globs require.
         let isUnderRoot: Bool
 
-        init(_ bytes: [UInt8], root: String?) {
+        init(_ bytes: [UInt8], roots: [[UInt8]]) {
             self.bytes = bytes
             let slash = UInt8(ascii: "/")
             isDirectory = bytes.last == slash
             var start = 0
             var isUnderRoot = bytes.first != slash
-            if let root, bytes.first == slash {
-                let rootBytes = Array(root.utf8)
-                if rootBytes == [slash] {
-                    isUnderRoot = true
-                } else if bytes.count > rootBytes.count, bytes[rootBytes.count] == slash,
-                    bytes[0..<rootBytes.count].elementsEqual(rootBytes)
-                {
-                    start = rootBytes.count
-                    isUnderRoot = true
+            if bytes.first == slash {
+                for rootBytes in roots {
+                    if rootBytes == [slash] {
+                        isUnderRoot = true
+                        break
+                    }
+                    if bytes.count > rootBytes.count, bytes[rootBytes.count] == slash,
+                        bytes[0..<rootBytes.count].elementsEqual(rootBytes)
+                    {
+                        start = rootBytes.count
+                        isUnderRoot = true
+                        break
+                    }
                 }
             }
             self.isUnderRoot = isUnderRoot
