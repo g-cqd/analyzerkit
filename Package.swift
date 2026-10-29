@@ -38,6 +38,10 @@ let package = Package(
         // The byte kernels, POSIX file and bounded-concurrency primitives `SourceCorpus` is built on.
         .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "bfc4f5a701e8d80e5c63b13f606b578c5c0410c0"),
         // The JSON coder behind the per-file facts cache.
+        // IndexStoreDB opens index stores for IndexStoreSupport, on macOS only. No semver tags: pinned to one revision, which
+        // arcleak and deadwood must pin too (SwiftPM resolves one revision per package in a graph).
+        .package(
+            url: "https://github.com/swiftlang/indexstore-db.git", revision: "0390867818c28241af4650eb4ef29af5669335a3"),
         .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "71f101b8e287195a1d5dae6f2e039f23f418a057"),
     ],
     targets: [
@@ -81,10 +85,15 @@ let package = Package(
             name: "IndexStoreSupport",
             dependencies: [
                 "SourceCorpus", "ProjectModel", "ReportSupport", .product(name: "AemiKernel", package: "aemi"),
+                .product(name: "IndexStoreDB", package: "indexstore-db", condition: .when(platforms: [.macOS])),
             ],
             swiftSettings: strictSwiftSettings),
         .testTarget(
-            name: "IndexStoreSupportTests", dependencies: ["IndexStoreSupport", "ProjectModel", "ReportSupport"],
+            name: "IndexStoreSupportTests",
+            dependencies: [
+                "IndexStoreSupport", "ProjectModel", "ReportSupport",
+                .product(name: "IndexStoreDB", package: "indexstore-db", condition: .when(platforms: [.macOS])),
+            ],
             swiftSettings: strictSwiftSettings),
         // The shared model of a Swift project: entry points the system or the
         // test frameworks create, code regions, generated files, and the shared
