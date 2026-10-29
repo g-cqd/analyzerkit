@@ -101,3 +101,51 @@ import Testing
         #expect(PathFilter(["/*.swift"], root: "/r/").excludes("/r/A.swift"))
     }
 }
+
+/// A walk that prunes with the filter lists exactly what filtering the whole walk keeps, so a tool that walks and a tool
+/// that is handed a list select the same files (roadmap 0005).
+@Suite struct PathFilterWalkTests {
+    static let fixture = [
+        "Package.swift", "Sources/App/App.swift", "Sources/App/MyPackage.swift", "Sources/App/Generated/Assets.swift",
+        "Sources/App/Internal/Secret.swift", "Sources/App/Internal.swift", "Sources/Kit/Mock1.swift",
+        "Sources/Kit/Deep/Mock2.swift", "Tests/AppTests/AppTests.swift", "Tests/Fixtures/Input.swift",
+        "BuildTools/Plugin.swift", "Danger/Rules.swift", "Dangerfile.swift", "école.swift",
+    ]
+
+    static let configurations: [[String]] = [
+        [],
+        ["/Generated/", "Package.swift", "Danger/", "Dangerfile.swift"],
+        ["**/Package.swift", "**/Tests/**", "Sources/*/Internal"],
+        ["/Sources/**/Mock?.swift", "**/Build*/", "[é]*.swift", "**/Fixtures/**"],
+        ["*"],
+    ]
+
+    @Test(arguments: configurations)
+    func `pruning the walk agrees with filtering the list`(_ entries: [String]) throws {
+        try Scratch.with { scratch in
+            for file in Self.fixture { try scratch.write(file) }
+            let root = SourcePath.canonical(scratch.root.path)
+            let filter = PathFilter(entries, root: root)
+            let pruned = SourceDiscovery.swiftFiles(under: root, isExcluded: filter.excludes)
+            let filtered = SourceDiscovery.swiftFiles(under: root).filter { !filter.excludes($0) }
+            #expect(pruned == filtered)
+            #expect(SourceDiscovery.swiftFiles(under: root).count == Self.fixture.count)
+        }
+    }
+
+    @Test func `the files a configuration keeps`() throws {
+        try Scratch.with { scratch in
+            for file in Self.fixture { try scratch.write(file) }
+            let root = SourcePath.canonical(scratch.root.path)
+            let filter = PathFilter(["**/Package.swift", "**/Tests/**", "Sources/*/Internal", "/*.swift"], root: root)
+            let kept = SourceDiscovery.swiftFiles(under: root, isExcluded: filter.excludes)
+                .map { String($0.dropFirst(root.count + 1)) }
+            #expect(
+                kept == [
+                    "BuildTools/Plugin.swift", "Danger/Rules.swift", "Sources/App/App.swift",
+                    "Sources/App/Generated/Assets.swift", "Sources/App/Internal.swift", "Sources/App/MyPackage.swift",
+                    "Sources/Kit/Deep/Mock2.swift", "Sources/Kit/Mock1.swift",
+                ])
+        }
+    }
+}
