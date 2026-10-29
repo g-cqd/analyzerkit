@@ -1,3 +1,4 @@
+internal import AemiFileSystem
 internal import SourceCorpus
 
 #if canImport(FoundationEssentials)
@@ -63,22 +64,32 @@ public struct ProjectLayout: Sendable, Equatable {
 
     /// What one ancestor holds, and what finding it cost.
     struct Markers: Equatable {
-        /// An `.xcodeproj` or `.xcworkspace` directory, or a link to one.
+        /// An `.xcodeproj` or `.xcworkspace` directory; a link named like one does not count.
         var hasContainer: Bool
         /// An entry named `Package.swift`.
         var hasPackage: Bool
         /// Directories opened: the ancestor itself, and none of its subdirectories.
         var directoriesOpened: Int
-        /// Entries stat'ed: those the listing did not type, and links named like a container.
+        /// Entries stat'ed: those the listing did not type.
         var statCalls: Int
     }
 
-    /// The ancestor `directory`'s markers. Red stub (roadmap 0007): today's listing, whose costs it cannot count.
+    /// The ancestor `directory`'s markers, from one `readdir` listing that types its entries (aemi ADR 0017): no
+    /// subdirectory is opened and no entry the listing typed is stat'ed. An unreadable directory has none.
     static func markers(in directory: String) -> Markers {
-        let entries = (try? FileManager.default.contentsOfDirectory(atPath: directory)) ?? []
-        return Markers(
-            hasContainer: entries.contains { isContainer($0) && isDirectory(join(directory, $0)) },
-            hasPackage: entries.contains("Package.swift"), directoriesOpened: -1, statCalls: -1)
+        let policy = DirectoryWalk.Policy(
+            includesHidden: true, links: .never, reportsDirectories: true, maxDepth: 1, workers: 1)
+        guard let listing = try? DirectoryWalk.walk(directory, policy: policy) else {
+            return Markers(hasContainer: false, hasPackage: false, directoriesOpened: 0, statCalls: 0)
+        }
+        var markers = Markers(
+            hasContainer: false, hasPackage: false, directoriesOpened: listing.statistics.directoriesOpened,
+            statCalls: listing.statistics.statCalls)
+        for entry in listing.entries {
+            if entry.relativePath == "Package.swift" { markers.hasPackage = true }
+            if entry.kind == .directory, isContainer(entry.relativePath) { markers.hasContainer = true }
+        }
+        return markers
     }
 
     /// Matching stores, newest first by LastAccessedDate (directory modification time if absent), then path.

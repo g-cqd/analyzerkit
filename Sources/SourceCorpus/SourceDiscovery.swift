@@ -1,21 +1,27 @@
+internal import AemiFileSystem
+
+#if canImport(Darwin)
+    internal import Darwin
+#elseif canImport(Glibc)
+    internal import Glibc
+#endif
 #if canImport(FoundationEssentials)
     internal import FoundationEssentials
 #else
     internal import Foundation
 #endif
 
-/// Finds the files under a directory argument.
+/// Finds the files under a directory argument, on `AemiFileSystem.DirectoryWalk` (aemi ADR 0017): `readdir` with the
+/// entry types the listing gives, four workers, every directory opened relative to the root with no link followed.
 ///
-/// The walk follows symlinks, so a linked subtree is analyzed like any other, within two limits:
-/// - Each directory is entered once, identified by the device and inode its path resolves to. A link back
-///   to an ancestor (`ln -s ..`) used to send the walk round the tree again at every level until the
-///   kernel's symlink limit, and two such links made it exponential.
-/// - A link, to a directory or to a file, whose target resolves outside the walked directory is not
-///   followed. A link to `/` or to a sibling checkout used to pull every Swift file it reached into the
-///   corpus, and a corpus spanning two repositories has no repository to anchor fingerprints to.
-///
-/// A dangling link that the filter accepts is still listed, so the analyzer reports it degraded rather than
-/// dropping it unseen.
+/// No link is descended, so no cycle can loop and no link can lead out of the walked directory:
+/// - A link, to a directory or a file, whose target resolves inside the walked directory stands for that target, which
+///   the walk reaches at its own path. A linked subtree is analyzed once, under its real name, and exclusion follows the
+///   real location: excluding a directory excludes it under every alias, and an alias cannot hide its target.
+/// - A link whose target resolves outside is dropped. A link to `/` or to a sibling checkout used to pull every Swift
+///   file it reached into the corpus, and a corpus spanning two repositories has no repository to anchor fingerprints to.
+/// - A dangling link that the filter accepts is still listed, so the analyzer reports it degraded rather than dropping
+///   it unseen.
 public enum SourceDiscovery {
     /// Entry names never descended into: build products, VCS internals and dependency checkouts.
     /// Hidden entries (a leading `.`) are skipped as well.
@@ -27,109 +33,81 @@ public enum SourceDiscovery {
         public let files: [String]
         /// Directories that could not be listed, spelled like the files, sorted. They contribute nothing.
         public let unreadableDirectories: [String]
-        /// Entries the directory listing did not type, so they were stat'ed; zero on APFS and ext4.
+        /// Entries stat'ed: those the listing did not type (none on APFS and ext4), and each candidate link, to tell a
+        /// dangling one from one that leads out.
         public let statCalls: Int
     }
 
     /// Every `.swift` file under `directory` that `isExcluded` keeps, with what the walk could not read.
+    ///
+    /// `isExcluded` is asked about each file's path and each directory's path with a trailing `/`, both spelled through
+    /// `directory`; an excluded directory is not entered. It is called from the walk's worker threads.
+    /// - Complexity: O(*n* log *n*) in the number of entries under `directory`; each directory is read once.
     public static func discover(
         under directory: String,
         isExcluded: @escaping @Sendable (String) -> Bool = { _ in false }
     ) -> Discovery {
-        // Red stub (roadmap 0007): today's walk, which stats every entry and cannot tell an unreadable directory.
-        let files = swiftFiles(under: directory, isExcluded: isExcluded)
-        return Discovery(files: files, unreadableDirectories: [], statCalls: -1)
+        walk(directory, isExcluded: isExcluded) { $0.hasSuffix(".swift") }
     }
 
-    /// Every `.swift` file under `directory` that `isExcluded` keeps, sorted.
+    /// Every `.swift` file under `directory` that `isExcluded` keeps, sorted: ``discover(under:isExcluded:)``'s files.
     ///
-    /// Paths are absolute and spelled through `directory` as given; ``SourcePath`` canonicalizes them for
-    /// analysis. Entries are visited in name order, so the spelling a file is listed under does not depend on
-    /// directory order. An unreadable directory contributes nothing.
-    ///
-    /// `isExcluded` is asked about each file's path as it was reached, and about each directory's with a
-    /// trailing `/`. An excluded directory is not walked and does not count as visited, so a link named like
-    /// an exclude pattern cannot hide the real directory behind it.
-    /// - Complexity: O(*n* log *n*) in the number of entries under `directory`; each directory is read once.
-    public static func swiftFiles(under directory: String, isExcluded: (String) -> Bool = { _ in false }) -> [String] {
-        files(under: directory, isExcluded: isExcluded) { $0.hasSuffix(".swift") }
+    /// Paths are absolute and spelled through `directory` as given; ``SourcePath`` canonicalizes them for analysis.
+    public static func swiftFiles(
+        under directory: String,
+        isExcluded: @escaping @Sendable (String) -> Bool = { _ in false }
+    ) -> [String] {
+        discover(under: directory, isExcluded: isExcluded).files
     }
 
     /// The files under `directory` that `isIncluded` accepts and `isExcluded` keeps, walked as
-    /// ``swiftFiles(under:isExcluded:)`` walks, sorted.
+    /// ``discover(under:isExcluded:)`` walks, sorted.
     public static func files(
         under directory: String,
-        isExcluded: (String) -> Bool = { _ in false },
-        where isIncluded: (String) -> Bool
+        isExcluded: @escaping @Sendable (String) -> Bool = { _ in false },
+        where isIncluded: @escaping @Sendable (String) -> Bool
     ) -> [String] {
-        let manager = FileManager.default
-        let root = SourcePath.canonical(directory)
-        let rootPrefix = root.hasSuffix("/") ? root : root + "/"
-        var visited: Set<DirectoryIdentity> = []
-        if let attributes = try? manager.attributesOfItem(atPath: root) {
-            visited.insert(DirectoryIdentity(attributes: attributes, resolvedPath: root))
-        }
+        walk(directory, isExcluded: isExcluded, where: isIncluded).files
+    }
 
+    private static func walk(
+        _ directory: String,
+        isExcluded: @escaping @Sendable (String) -> Bool,
+        where isIncluded: @escaping @Sendable (String) -> Bool
+    ) -> Discovery {
+        let root = URL(fileURLWithPath: directory).path
+        let prefix = root.hasSuffix("/") ? root : root + "/"
+        let policy = DirectoryWalk.Policy(
+            skippedNames: skippedComponents, includesHidden: false, links: .withinRoot,
+            accepts: { candidate in
+                let path = prefix + candidate.relativePath
+                switch candidate.kind {
+                case .directory: return !isExcluded(path + "/")
+                // Under `withinRoot`, a link left is dangling or leads out; which one is decided below.
+                case .file, .link: return isIncluded(path) && !isExcluded(path)
+                case .other: return false
+                }
+            })
+        guard let result = try? DirectoryWalk.walk(root, policy: policy) else {
+            return Discovery(files: [], unreadableDirectories: [root], statCalls: 0)
+        }
+        var statCalls = result.statistics.statCalls
         var files: [String] = []
-        // Each directory as the caller spells it, and as it resolves: an entry's own location is its
-        // directory's resolved path plus its name, so only an entry that is itself a link needs resolving.
-        var stack = [(spelled: URL(fileURLWithPath: directory).path, resolved: root)]
-        while let current = stack.popLast() {
-            guard let entries = try? manager.contentsOfDirectory(atPath: current.spelled) else { continue }
-            for entry in entries.sorted() where !entry.hasPrefix(".") && !skippedComponents.contains(entry) {
-                let spelled = joined(current.spelled, entry)
-                var resolved = joined(current.resolved, entry)
-                // attributesOfItem does not follow a final symlink.
-                var attributes = try? manager.attributesOfItem(atPath: resolved)
-                if (attributes?[.type] as? FileAttributeType) == .typeSymbolicLink {
-                    // A dangling link does not resolve, and keeps its own location.
-                    resolved = SourcePath.canonical(resolved)
-                    guard resolved == root || resolved.hasPrefix(rootPrefix) else { continue }
-                    attributes = try? manager.attributesOfItem(atPath: resolved)
-                }
-                if let attributes, (attributes[.type] as? FileAttributeType) == .typeDirectory {
-                    guard !isExcluded(spelled + "/"),
-                        visited.insert(DirectoryIdentity(attributes: attributes, resolvedPath: resolved)).inserted
-                    else { continue }
-                    stack.append((spelled, resolved))
-                } else if isIncluded(spelled), !isExcluded(spelled) {
-                    files.append(spelled)
-                }
+        for entry in result.entries {
+            let path = prefix + entry.relativePath
+            if entry.kind == .link {
+                statCalls += 1
+                guard !resolves(path) else { continue }
             }
+            files.append(path)
         }
-        return files.sorted()
+        let unreadable = result.failures.map { $0.relativePath.isEmpty ? root : prefix + $0.relativePath }
+        return Discovery(files: files.sorted(), unreadableDirectories: unreadable.sorted(), statCalls: statCalls)
     }
 
-    /// `name` inside `directory`, with one separator even when `directory` is `/`.
-    private static func joined(_ directory: String, _ name: String) -> String {
-        directory.hasSuffix("/") ? directory + name : directory + "/" + name
-    }
-
-    /// What makes two spellings one directory: the device and inode its path resolves to, or the resolved
-    /// path when the file system reports neither.
-    private enum DirectoryIdentity: Hashable {
-        case node(device: UInt64, inode: UInt64)
-        case path(String)
-
-        init(attributes: [FileAttributeKey: Any], resolvedPath: String) {
-            if let device = Self.number(attributes[.systemNumber]),
-                let inode = Self.number(attributes[.systemFileNumber])
-            {
-                self = .node(device: device, inode: inode)
-            } else {
-                self = .path(resolvedPath)
-            }
-        }
-
-        /// Foundation boxes these attributes as `NSNumber` on Darwin, and as `UInt` or `UInt64` in
-        /// FoundationEssentials.
-        private static func number(_ value: Any?) -> UInt64? {
-            switch value {
-            case let number as UInt64: number
-            case let number as UInt: UInt64(number)
-            case let number as Int: UInt64(exactly: number)
-            default: nil
-            }
-        }
+    /// Whether `path`'s links lead to something that exists.
+    private static func resolves(_ path: String) -> Bool {
+        var status = stat()
+        return unsafe stat(path, &status) == 0
     }
 }
