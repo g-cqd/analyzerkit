@@ -131,4 +131,17 @@ import Testing
         #expect(table.suppression(for: .first, line: 3) == nil)
         #expect(table.suppression(for: .first, line: 4) == .some("first"))
     }
+    @Test func `marker kernel handles every vector boundary false at sign and partial namespace`() {
+        let grammar = DirectiveGrammar(namespaces: ["al:", "arcleak:"])
+        for count in 0..<130 {
+            let lead = String(repeating: "x", count: count)
+            #expect(grammar.containsMarker(lead + "@al:accept"))
+            #expect(grammar.containsMarker(lead + "@wrong @arcleak:accept"))
+            #expect(grammar.containsMarker(lead + "🎉@al:accept"))
+            for tail in ["", "@", "@a", "@al", "@alx:", "@arcleak", "@foreign:"] {
+                #expect(!grammar.containsMarker(lead + tail))
+            }
+        }
+    }
+
 }
