@@ -66,25 +66,47 @@ import Testing
         }
     }
 
-    @Test func `the current directory wins when it holds a file, else the project root, never both`() throws {
+    @Test func `the current directory wins when it holds a file, else the nearest up to the repository root`() throws {
         try project([
             ".arcleak.json": #"{"exclude": ["root"]}"#, "Sources/.arcleak.json": #"{"exclude": ["here"]}"#,
+            "Other/.keep": "",
         ]) { root in
-            let value1 = try object(resolve(root, from: "Sources"))
-            #expect(value1["exclude"] as? [String] == ["here"])
-            let value2 = try object(resolve(root, from: "Sources/App"))
-            #expect(value2["exclude"] as? [String] == ["root"])
-            let nested = try resolve(root, from: "Sources/App")
-            #expect(nested.directory == root)
+            let here = try object(resolve(root, from: "Sources"))
+            #expect(here["exclude"] as? [String] == ["here"])
+            let nearest = try resolve(root, from: "Sources/App")
+            #expect(try object(nearest)["exclude"] as? [String] == ["here"] && nearest.directory == root + "/Sources")
+            let top = try resolve(root, from: "Other")
+            #expect(try object(top)["exclude"] as? [String] == ["root"] && top.directory == root)
         }
         try project([".swift-analyzers.json": #"{"exclude": ["shared"]}"#]) { root in
-            let value3 = try object(resolve(root, from: "Sources/App"))
-            #expect(value3["exclude"] as? [String] == ["shared"])
+            let shared = try object(resolve(root, from: "Sources/App"))
+            #expect(shared["exclude"] as? [String] == ["shared"])
         }
         try project([:]) { root in
             let resolved = try resolve(root)
             #expect(resolved.json == Array("{}".utf8) && resolved.directory == nil && resolved.sources.isEmpty)
         }
+    }
+
+    @Test func `no file above the repository root is read, and outside a repository only the current directory`() throws
+    {
+        let outer = FileManager.default.temporaryDirectory.appending(path: "shared-config-outer-\(UUID().uuidString)")
+            .resolvingSymlinksInPath()
+        defer { try? FileManager.default.removeItem(at: outer) }
+        let repository = outer.appending(path: "repo")
+        let loose = outer.appending(path: "loose/Sources")
+        for directory in [repository.appending(path: "Sources"), loose] {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        }
+        try Data(#"{"exclude": ["outer"]}"#.utf8).write(to: outer.appending(path: ".arcleak.json"))
+        try Data("gitdir: none\n".utf8).write(to: repository.appending(path: ".git"))
+        let inside = try SharedConfiguration.resolve(
+            for: Self.arcleak, explicit: nil, currentDirectory: repository.appending(path: "Sources").path,
+            analyzedPaths: ["."])
+        #expect(inside.sources.isEmpty, "a configuration above the repository root is not the project's")
+        let outside = try SharedConfiguration.resolve(
+            for: Self.arcleak, explicit: nil, currentDirectory: loose.path, analyzedPaths: ["."])
+        #expect(outside.sources.isEmpty, "outside a repository nothing beyond the current directory is read")
     }
 
     @Test func `--config names one file, read in the format its name says`() throws {
