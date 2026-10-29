@@ -28,6 +28,13 @@ Scanners are syntactic or textual: no build and no index query. `ProjectLayout` 
 reads through Foundation and SourceCorpus; it never executes manifests or project scripts. Each scanner states its
 complexity; all are linear in their input.
 
+## Library: `AnalyzerCLI`
+
+| API | Answers |
+| --- | --- |
+| `ExitStatus`, `RunOutcome` | the six exit statuses of every analyzer and when a run fails (ADR-0018): an error, a warning under `--strict`, never a note; 70 when every file found was skipped |
+| `InputOptions`, `OutputOptions`, `RuleOptions`, `CacheOptions`, `IndexOptions`, `ExperimentalOptions` | the shared ArgumentParser option groups (ADR-0019), deprecated spellings folded in and reported as `Deprecation`s |
+
 ## Library: `IndexStoreSupport`
 
 | API | Answers |
