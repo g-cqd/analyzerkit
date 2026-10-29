@@ -12,7 +12,7 @@ The same project gives the same answer whichever tool reads it. Concretely, for 
 - **One project model.** SwiftPM packages, Xcode projects and workspaces, nested local packages and git worktrees are
   recognised the same way, by `ProjectLayout`; every feature (index store, regions, tests, caches) works on all of them.
 - **One surface.** The same flags spell the same thing, the same configuration file is read, the same paths are analysed,
-  the same exit codes mean the same failure, and the report has one shape (ADR-0019, ADR-0020, ADR-0008, ADR-0017).
+  the same exit codes mean the same failure, and the report has one shape (ADR-0019, ADR-0021, ADR-0008, ADR-0017).
 - **One contract with the CIs that run it.** What a consumer depends on (release archives, flags, exit codes, report keys,
   baseline fingerprints, suppression syntax) changes only through the release train (ADR-0015), never as a side effect.
 
