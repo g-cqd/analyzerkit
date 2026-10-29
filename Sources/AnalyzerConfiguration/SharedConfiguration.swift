@@ -1,6 +1,5 @@
 internal import AemiJSONCore
 internal import OrderedCollections
-internal import ProjectModel
 internal import SourceCorpus
 
 #if canImport(FoundationEssentials)
@@ -155,9 +154,34 @@ public enum SharedConfiguration {
         }
         let here = files(in: currentDirectory)
         if !here.isEmpty { return here }
-        let paths = analyzedPaths.map { absolute($0, in: currentDirectory) }
-        guard let root = ProjectLayout.discover(paths: paths)?.root, root != currentDirectory else { return [] }
-        return files(in: root)
+        // ADR-0021: the nearest directory holding a file, from the analyzed paths up to their repository root; two
+        // stat calls per directory and no listing. Outside a repository, nothing beyond the current directory.
+        let start = commonDirectory(of: analyzedPaths.map { absolute($0, in: currentDirectory) })
+        guard let start, let repository = RepositoryRoot.detect(from: start + "/") else { return [] }
+        var directory = start
+        while true {
+            let found = files(in: directory)
+            if !found.isEmpty { return found }
+            let parent = Self.parent(of: directory)
+            guard directory != repository, parent != directory, directory.hasPrefix(repository) else { return [] }
+            directory = parent
+        }
+    }
+
+    /// The deepest directory holding every path (a file stands for its directory); nil for no paths.
+    private static func commonDirectory(of paths: [String]) -> String? {
+        let directories = paths.map { path -> [Substring] in
+            let isDirectory =
+                (try? FileManager.default.attributesOfItem(atPath: path))?[.type] as? FileAttributeType
+                == .typeDirectory
+            let components = path.split(separator: "/")
+            return isDirectory ? components : Array(components.dropLast())
+        }
+        guard var common = directories.first else { return nil }
+        for components in directories.dropFirst() {
+            common = Array(zip(common, components).prefix { $0 == $1 }.map(\.0))
+        }
+        return "/" + common.joined(separator: "/")
     }
 
     private static func absolute(_ path: String, in directory: String) -> String {

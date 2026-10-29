@@ -46,7 +46,7 @@ let package = Package(
         .target(
             name: "AnalyzerConfiguration",
             dependencies: [
-                "ProjectModel", "SourceCorpus", .product(name: "AemiJSONCore", package: "AemiJSON"),
+                "SourceCorpus", .product(name: "AemiJSONCore", package: "AemiJSON"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
             ],
             swiftSettings: strictSwiftSettings),
