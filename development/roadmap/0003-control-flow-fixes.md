@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-29
 ---
@@ -14,3 +14,10 @@ Red: `research/probes/ControlFlowProbes.swift` as assertions; fcheck's `fcheck-p
 the dependency moves.
 
 Acceptance: the four probes give the expected graphs; fcheck K1 reports nothing and never "line 0", K2 reports the leak.
+
+## Done
+
+Diary 2026-10-29-06. Red `f517125` (seven tests, twelve issues), green in the next commit. fcheck against this tree (local
+`swift package edit`): K1 0 findings, K2 the `for try await` leak; fcheck's suite green; its findings on maintastic,
+AemiProtobuf, aemi and ask identical before and after (1, 0, 0, 12). fcheck still pins the previous analyzerkit; moving
+the pin is part of 0035.
