@@ -1,6 +1,7 @@
 import Foundation
-import ProjectModel
 import Testing
+
+@testable import ProjectModel
 
 @Suite struct ProjectLayoutTests {
     private func fixture(_ body: (Fixture) throws -> Void) throws {
@@ -30,6 +31,31 @@ import Testing
                 try data.write(to: URL(fileURLWithPath: root + "/" + name + "/info.plist"))
             }
             return root + "/" + name + "/Index.noindex/DataStore"
+        }
+    }
+
+    /// Each ancestor up to the repository root (or `/`) is listed: on a 267,000-entry temporary directory, a listing that
+    /// read every inode took 22.9 s (aemi's diary 2026-10-29-02). The listing types entries itself and opens nothing below.
+    @Test func `an ancestor is typed from its listing, opening no subdirectory and stating only container links`()
+        throws
+    {
+        try fixture { f in
+            try f.file("Package.swift")
+            try f.file("Fake.xcodeproj", "a file, not a container")
+            for index in 0..<30 { try f.file("Directory\(index)/File.swift") }
+            #expect(
+                ProjectLayout.markers(in: f.root)
+                    == .init(hasContainer: false, hasPackage: true, directoriesOpened: 1, statCalls: 0))
+            try f.file("Real/App.xcodeproj/project.pbxproj")
+            try FileManager.default.createSymbolicLink(
+                atPath: f.root + "/Linked.xcodeproj", withDestinationPath: "Real/App.xcodeproj")
+            #expect(
+                ProjectLayout.markers(in: f.root)
+                    == .init(hasContainer: true, hasPackage: true, directoriesOpened: 1, statCalls: 1))
+            try f.file("Real/Package.swift")
+            #expect(
+                ProjectLayout.markers(in: f.root + "/Real")
+                    == .init(hasContainer: true, hasPackage: true, directoriesOpened: 1, statCalls: 0))
         }
     }
 
