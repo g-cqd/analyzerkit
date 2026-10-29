@@ -36,9 +36,7 @@ import Testing
 
     /// Each ancestor up to the repository root (or `/`) is listed: on a 267,000-entry temporary directory, a listing that
     /// read every inode took 22.9 s (aemi's diary 2026-10-29-02). The listing types entries itself and opens nothing below.
-    @Test func `an ancestor is typed from its listing, opening no subdirectory and stating only container links`()
-        throws
-    {
+    @Test func `an ancestor is typed from its listing, opening no subdirectory and stating nothing`() throws {
         try fixture { f in
             try f.file("Package.swift")
             try f.file("Fake.xcodeproj", "a file, not a container")
@@ -47,11 +45,12 @@ import Testing
                 ProjectLayout.markers(in: f.root)
                     == .init(hasContainer: false, hasPackage: true, directoriesOpened: 1, statCalls: 0))
             try f.file("Real/App.xcodeproj/project.pbxproj")
+            // A link named like a container never counted (the check never followed a final link), and is not stat'ed.
             try FileManager.default.createSymbolicLink(
                 atPath: f.root + "/Linked.xcodeproj", withDestinationPath: "Real/App.xcodeproj")
             #expect(
                 ProjectLayout.markers(in: f.root)
-                    == .init(hasContainer: true, hasPackage: true, directoriesOpened: 1, statCalls: 1))
+                    == .init(hasContainer: false, hasPackage: true, directoriesOpened: 1, statCalls: 0))
             try f.file("Real/Package.swift")
             #expect(
                 ProjectLayout.markers(in: f.root + "/Real")

@@ -87,6 +87,7 @@ let package = Package(
             name: "ProjectModel",
             dependencies: [
                 "SourceCorpus",
+                .product(name: "AemiFileSystem", package: "aemi"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
             ],
             swiftSettings: strictSwiftSettings
@@ -98,6 +99,7 @@ let package = Package(
             dependencies: [
                 .product(name: "AemiKernel", package: "aemi"),
                 .product(name: "AemiIO", package: "aemi"),
+                .product(name: "AemiFileSystem", package: "aemi"),
             ],
             swiftSettings: strictSwiftSettings
         ),
