@@ -1,6 +1,11 @@
-internal import Dispatch
-internal import Foundation
+internal import Subprocess
+internal import Synchronization
 
+#if canImport(System)
+    internal import System
+#else
+    internal import SystemPackage
+#endif
 #if canImport(Darwin)
     internal import Darwin
 #elseif canImport(Glibc)
@@ -8,16 +13,18 @@ internal import Foundation
 #endif
 
 /// Runs a subprocess with a deadline, a cap on the output kept, and a scrubbed environment: the one executor for
-/// toolchain probes and index-store builds (ADR-0004; roadmap 0010).
+/// toolchain probes and index-store builds (ADR-0004; roadmap 0010), on swift-subprocess.
+///
+/// The child starts a session of its own, so it and every process it starts share one process group. A deadline or a
+/// cancelled task signals that group: SIGTERM, then SIGKILL after ``terminationGrace``, so a build that is stopped leaves
+/// no compiler behind, even one that ignores SIGTERM (an ignored signal survives `exec`).
 public enum BoundedProcess {
-    /// How long a child that was asked to stop has before it is killed.
-    static let terminationGrace: DispatchTimeInterval = .seconds(2)
-    /// How long the output readers get, once the child is gone, to see the end of its pipes: a grandchild that kept
-    /// them open does not hold the run.
-    static let drainGrace: DispatchTimeInterval = .seconds(2)
+    /// How long a stopped group has between SIGTERM and SIGKILL.
+    public static let terminationGrace: Duration = .seconds(2)
 
     /// What a finished child left.
     public struct Result: Sendable, Equatable {
+        /// The exit status; for a child killed by a signal, 128 plus the signal, as shells report it.
         public let exitStatus: Int32
         public let standardOutput: [UInt8]
         public let standardError: [UInt8]
@@ -34,9 +41,9 @@ public enum BoundedProcess {
         /// Only an absolute path is run; nothing is looked up on `PATH`.
         case notAbsolute(String)
         case launchFailed(executable: String, reason: String)
-        /// The deadline passed; the child was terminated, then killed if it lingered.
+        /// The deadline passed; the child's process group was terminated, then killed if it lingered.
         case timedOut(executable: String, after: Duration)
-        /// The calling task was cancelled; the child was terminated.
+        /// The calling task was cancelled; the child's process group was terminated.
         case cancelled(executable: String)
     }
 
@@ -55,147 +62,159 @@ public enum BoundedProcess {
         return environment
     }
 
-    /// Runs `executable` and blocks the calling thread until it exits, the deadline passes, or nothing more can be read.
-    /// Each of standard output and standard error keeps at most `outputLimit` bytes; the rest is read and dropped, so a
-    /// child that writes a lot never blocks on a full pipe.
-    public static func runBlocking(
-        _ executable: String, _ arguments: [String], directory: String? = nil, environment: [String: String],
-        timeout: Duration = .seconds(120), outputLimit: Int = 1 << 20
-    ) throws(Failure) -> Result {
-        try execute(
-            executable, arguments, directory: directory, environment: environment, timeout: timeout,
-            outputLimit: outputLimit, isCancelled: { false })
-    }
-
-    /// ``runBlocking(_:_:directory:environment:timeout:outputLimit:)`` off the cooperative pool; cancelling the task
-    /// terminates the child.
+    /// Runs `executable` until it exits, the deadline passes, or the task is cancelled. Each of standard output and
+    /// standard error keeps at most `outputLimit` bytes; the rest is read and dropped, so a child that writes a lot never
+    /// blocks on a full pipe.
     public static func run(
         _ executable: String, _ arguments: [String], directory: String? = nil, environment: [String: String],
         timeout: Duration = .seconds(120), outputLimit: Int = 1 << 20
     ) async throws(Failure) -> Result {
-        let cancelled = Flag()
-        let outcome: Swift.Result<Result, Failure> = await withTaskCancellationHandler {
-            await withCheckedContinuation { continuation in
-                DispatchQueue.global().async {
-                    continuation.resume(
-                        returning: Swift.Result { () throws(Failure) -> Result in
-                            try execute(
-                                executable, arguments, directory: directory, environment: environment,
-                                timeout: timeout, outputLimit: outputLimit, isCancelled: { cancelled.isSet })
-                        })
-                }
-            }
-        } onCancel: {
-            cancelled.set()
-        }
-        return try outcome.get()
-    }
-
-    private static func execute(
-        _ executable: String, _ arguments: [String], directory: String?, environment: [String: String],
-        timeout: Duration, outputLimit: Int, isCancelled: () -> Bool
-    ) throws(Failure) -> Result {
         guard executable.hasPrefix("/") else { throw .notAbsolute(executable) }
-        guard !isCancelled() else { throw .cancelled(executable: executable) }
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-        process.environment = environment
-        if let directory { process.currentDirectoryURL = URL(fileURLWithPath: directory) }
-        let output = Pipe()
-        let errors = Pipe()
-        process.standardOutput = output
-        process.standardError = errors
-        process.standardInput = FileHandle.nullDevice
-        let exited = DispatchSemaphore(value: 0)
-        process.terminationHandler = { _ in exited.signal() }
+        guard !Task.isCancelled else { throw .cancelled(executable: executable) }
+        var options = PlatformOptions()
+        options.createSession = true
+        options.teardownSequence = [
+            .gracefulShutDown(toProcessGroup: true, allowedDurationToNextStep: terminationGrace)
+        ]
+        var variables: [Environment.Key: String] = [:]
+        for (key, value) in environment { variables[Environment.Key(stringLiteral: key)] = value }
+        let configuration = Configuration(
+            executable: .path(FilePath(executable)), arguments: Arguments(arguments),
+            environment: .custom(variables), workingDirectory: directory.map { FilePath($0) },
+            platformOptions: options)
+        let outcome: ExecutionResult<Collected, SequenceOutput, SequenceOutput>
         do {
-            try process.run()
+            outcome = try await Subprocess.run(configuration, input: .none, output: .sequence, error: .sequence) {
+                execution in
+                try await collect(execution, timeout: timeout, limit: outputLimit)
+            }
+        } catch let stopped as Stopped {
+            throw stopped.failure(executable: executable, timeout: timeout)
+        } catch is CancellationError {
+            throw .cancelled(executable: executable)
         } catch {
             throw .launchFailed(executable: executable, reason: "\(error)")
         }
-        let drained = DispatchGroup()
-        let standardOutput = Drain(output.fileHandleForReading, limit: outputLimit, group: drained)
-        let standardError = Drain(errors.fileHandleForReading, limit: outputLimit, group: drained)
-
-        let deadline = DispatchTime.now() + interval(timeout)
-        var stopped: Failure?
-        while exited.wait(timeout: min(DispatchTime.now() + .milliseconds(20), deadline)) == .timedOut {
-            if isCancelled() {
-                stopped = .cancelled(executable: executable)
-            } else if DispatchTime.now() >= deadline {
-                stopped = .timedOut(executable: executable, after: timeout)
+        // Subprocess tears a cancelled task's child down itself; its outputs then end as if it had finished.
+        guard !Task.isCancelled else { throw .cancelled(executable: executable) }
+        let status: Int32 =
+            switch outcome.terminationStatus {
+            case .exited(let code): Int32(code)
+            case .signaled(let signal): 128 + Int32(signal)
             }
-            if stopped != nil { break }
-        }
-        if let stopped {
-            process.terminate()
-            if exited.wait(timeout: .now() + terminationGrace) == .timedOut {
-                kill(process.processIdentifier, SIGKILL)
-                exited.wait()
-            }
-            _ = drained.wait(timeout: .now() + drainGrace)
-            throw stopped
-        }
-        _ = drained.wait(timeout: .now() + drainGrace)
-        let out = standardOutput.snapshot()
-        let err = standardError.snapshot()
         return Result(
-            exitStatus: process.terminationStatus, standardOutput: out.bytes, standardError: err.bytes,
-            outputTruncated: out.truncated || err.truncated)
+            exitStatus: status, standardOutput: outcome.closureResult.output,
+            standardError: outcome.closureResult.error,
+            outputTruncated: outcome.closureResult.truncated)
     }
 
-    private static func interval(_ duration: Duration) -> DispatchTimeInterval {
-        let (seconds, attoseconds) = duration.components
-        let total = seconds.multipliedReportingOverflow(by: 1_000_000_000)
-        guard !total.overflow, seconds >= 0 else { return .never }
-        return .nanoseconds(Int(clamping: total.partialValue + attoseconds / 1_000_000_000))
+    /// Both outputs, as far as the limit.
+    private struct Collected: Sendable {
+        var output: [UInt8] = []
+        var error: [UInt8] = []
+        var truncated = false
     }
 
-    /// Reads one pipe to its end on a thread of its own, keeping the first `limit` bytes.
-    private final class Drain: @unchecked Sendable {
-        private let lock = NSLock()
-        private var bytes: [UInt8] = []
-        private var truncated = false
+    /// Why the body stopped the child; turned into a ``Failure`` once Subprocess has torn it down.
+    private enum Stopped: Error {
+        case deadline
+        case cancelled
 
-        init(_ handle: FileHandle, limit: Int, group: DispatchGroup) {
-            group.enter()
-            DispatchQueue.global().async { [self] in
-                defer { group.leave() }
-                while true {
-                    let chunk = handle.availableData
-                    if chunk.isEmpty { return }
-                    lock.lock()
-                    let room = max(0, limit - bytes.count)
-                    if chunk.count > room { truncated = true }
-                    bytes += chunk.prefix(room)
-                    lock.unlock()
-                }
+        func failure(executable: String, timeout: Duration) -> Failure {
+            switch self {
+            case .deadline: .timedOut(executable: executable, after: timeout)
+            case .cancelled: .cancelled(executable: executable)
             }
         }
+    }
 
-        func snapshot() -> (bytes: [UInt8], truncated: Bool) {
-            lock.lock()
-            defer { lock.unlock() }
-            return (bytes, truncated)
+    private enum Event: Sendable {
+        case output([UInt8], truncated: Bool)
+        case error([UInt8], truncated: Bool)
+        case deadline
+    }
+
+    /// Reads both outputs until they end, racing the deadline. On the deadline, or when the task is cancelled, the
+    /// child's group is stopped here, while the child is not yet reaped and its process-group id cannot be reused.
+    private static func collect(
+        _ execution: Execution<NoInput, SequenceOutput, SequenceOutput>, timeout: Duration, limit: Int
+    ) async throws -> Collected {
+        let group = execution.processIdentifier.value
+        let finished = Finished()
+        do {
+            return try await withThrowingTaskGroup(of: Event.self) { tasks in
+                tasks.addTask {
+                    defer { finished.count.add(1, ordering: .relaxed) }
+                    let (bytes, truncated) = try await drain(execution.standardOutput, limit: limit)
+                    return .output(bytes, truncated: truncated)
+                }
+                tasks.addTask {
+                    defer { finished.count.add(1, ordering: .relaxed) }
+                    let (bytes, truncated) = try await drain(execution.standardError, limit: limit)
+                    return .error(bytes, truncated: truncated)
+                }
+                tasks.addTask {
+                    try await Task.sleep(for: timeout)
+                    return .deadline
+                }
+                var collected = Collected()
+                var outputs = 0
+                while let event = try await tasks.next() {
+                    switch event {
+                    case .output(let bytes, let truncated):
+                        collected.output = bytes
+                        collected.truncated = collected.truncated || truncated
+                        outputs += 1
+                    case .error(let bytes, let truncated):
+                        collected.error = bytes
+                        collected.truncated = collected.truncated || truncated
+                        outputs += 1
+                    case .deadline:
+                        await stop(group: group, finished: finished)
+                        tasks.cancelAll()
+                        throw Stopped.deadline
+                    }
+                    if outputs == 2 {
+                        tasks.cancelAll()
+                        return collected
+                    }
+                }
+                return collected
+            }
+        } catch let stopped as Stopped {
+            throw stopped
+        } catch {
+            // Cancellation reached the readers or the deadline's sleep.
+            await stop(group: group, finished: finished)
+            throw Stopped.cancelled
         }
     }
 
-    /// Set once, from any thread.
-    private final class Flag: @unchecked Sendable {
-        private let lock = NSLock()
-        private var value = false
-
-        var isSet: Bool {
-            lock.lock()
-            defer { lock.unlock() }
-            return value
+    /// SIGTERM to the group, then SIGKILL once both outputs have ended or the grace has passed.
+    private static func stop(group: pid_t, finished: Finished) async {
+        kill(-group, SIGTERM)
+        let deadline = ContinuousClock.now + terminationGrace
+        while finished.count.load(ordering: .relaxed) < 2 && ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(20))
         }
+        kill(-group, SIGKILL)
+    }
 
-        func set() {
-            lock.lock()
-            value = true
-            lock.unlock()
+    /// How many of the two outputs have ended.
+    private final class Finished: Sendable {
+        let count = Atomic<Int>(0)
+    }
+
+    private static func drain(_ sequence: SubprocessOutputSequence, limit: Int) async throws -> ([UInt8], Bool) {
+        var bytes: [UInt8] = []
+        var truncated = false
+        for try await buffer in sequence {
+            unsafe buffer.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+                let room = max(0, limit - bytes.count)
+                if raw.count > room { truncated = true }
+                unsafe bytes.append(contentsOf: raw.prefix(room))
+            }
         }
+        return (bytes, truncated)
     }
 }

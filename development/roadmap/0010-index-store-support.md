@@ -38,8 +38,10 @@ Diary 2026-10-29-21. Three steps, each red then green: `f662a64`/`4831ed6` (loca
   unit paths is never queried. Tests compile real stores with `swiftc`: three depths, one database, nothing written
   outside the cache root; a relative-path store not usable; a never-compiled and an edited file classified apart; a
   read-only store opens (written after the implementation, as a guard; never red).
-- `BoundedProcess`: deadline (SIGTERM, then SIGKILL after 2 s), output cap with the pipes drained, the forks' environment
-  allow-list, absolute executables only, cancellation; `ToolchainResolution.systemProbe` runs through it.
+- `BoundedProcess`: on swift-subprocess 1.0.2 (owner's suggestion), the child in a session of its own; a deadline or a
+  cancelled task sends SIGTERM to its process group, then SIGKILL after 2 s, so its descendants go too, even one that
+  ignores SIGTERM; output cap with the pipes drained; the forks' environment allow-list; absolute executables only. Async
+  only, so `ToolchainResolution.resolve` and `systemProbe` are async (red `778e223`, green after it).
 - indexstore-db pinned at upstream `main` `0390867` (the tools' `64aa0b2` is on neither `main` nor `release/6.3`; `main`
   adds parallel record reads). arcleak and deadwood move to it when they adopt (0018, 0019).
 

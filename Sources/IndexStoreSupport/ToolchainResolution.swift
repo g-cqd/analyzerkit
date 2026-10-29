@@ -62,8 +62,9 @@ public enum ToolchainResolution {
         environment: [String: String]? = nil,
         home: String? = nil,
         commandLineTools: String = "/Library/Developer/CommandLineTools",
-        command: (_ executable: String, _ arguments: [String], _ environment: [String: String]) -> String? = systemProbe
-    ) -> Outcome {
+        command: (_ executable: String, _ arguments: [String], _ environment: [String: String]) async -> String? =
+            systemProbe
+    ) async -> Outcome {
         let environment = environment ?? ProcessInfo.processInfo.environment
         let home = home ?? NSHomeDirectory()
         var diagnostics: [String] = []
@@ -101,7 +102,7 @@ public enum ToolchainResolution {
         }
 
         var safeEnvironment = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "HOME": home]
-        if let selected = command("/usr/bin/xcode-select", ["-p"], safeEnvironment) {
+        if let selected = await command("/usr/bin/xcode-select", ["-p"], safeEnvironment) {
             if let library = developer(selected, source: "xcode-select") { return success(library) }
         } else {
             diagnostics.append("libIndexStore: xcode-select unavailable or failed")
@@ -109,7 +110,7 @@ public enum ToolchainResolution {
         if let override = environment["DEVELOPER_DIR"], !override.isEmpty {
             safeEnvironment["DEVELOPER_DIR"] = override
         }
-        if let swift = command("/usr/bin/xcrun", ["--find", "swift"], safeEnvironment)?
+        if let swift = await command("/usr/bin/xcrun", ["--find", "swift"], safeEnvironment)?
             .trimmingCharacters(in: .whitespacesAndNewlines), swift.hasPrefix("/"), !swift.utf8.contains(0)
         {
             let library = URL(fileURLWithPath: swift).deletingLastPathComponent().deletingLastPathComponent()
@@ -132,9 +133,9 @@ public enum ToolchainResolution {
         return Outcome(libraryPath: nil, diagnostics: diagnostics)
     }
 
-    /// Synchronous probes for two small, fixed system commands, with an explicitly scrubbed environment, through
-    /// ``BoundedProcess``: ten seconds at most, 4 KiB of output at most. Does not execute the Swift compiler.
-    public static func systemProbe(_ executable: String, _ arguments: [String], _ environment: [String: String])
+    /// Probes for two small, fixed system commands, with an explicitly scrubbed environment, through ``BoundedProcess``:
+    /// ten seconds at most, 4 KiB of output at most. Does not execute the Swift compiler.
+    public static func systemProbe(_ executable: String, _ arguments: [String], _ environment: [String: String]) async
         -> String?
     {
         #if os(macOS)
@@ -145,7 +146,7 @@ public enum ToolchainResolution {
             var safe = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin"]
             for key in ["HOME", "DEVELOPER_DIR"] { safe[key] = environment[key] }
             guard
-                let result = try? BoundedProcess.runBlocking(
+                let result = try? await BoundedProcess.run(
                     executable, arguments, environment: safe, timeout: .seconds(10), outputLimit: 4096),
                 result.succeeded, !result.outputTruncated
             else { return nil }
