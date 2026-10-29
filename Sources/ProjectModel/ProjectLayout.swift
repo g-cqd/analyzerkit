@@ -72,8 +72,8 @@ public struct ProjectLayout: Sendable, Equatable {
                 let metadata = Self.join(candidate, "info.plist")
                 var accessed: Date?
                 if FileManager.default.fileExists(atPath: metadata) {
-                    guard let data = try? Data(contentsOf: URL(fileURLWithPath: metadata)),
-                        let plist = try? PropertyListDecoder().decode(DerivedDataMetadata.self, from: data),
+                    guard let bytes = try? BoundedFileReader.read(path: metadata),
+                        let plist = try? PropertyListDecoder().decode(DerivedDataMetadata.self, from: Data(bytes)),
                         containers.contains(SourcePath.canonical(plist.WorkspacePath))
                     else { continue }
                     accessed = plist.LastAccessedDate
