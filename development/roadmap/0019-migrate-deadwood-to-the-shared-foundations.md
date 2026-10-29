@@ -20,3 +20,4 @@ and after in the tool's diary.
 From 0010: analyzerkit pins indexstore-db at `0390867` (upstream `main`); deadwood's `64aa0b2` must move with the
 analyzerkit bump. Its `ProcessExecutor` and `BinaryTrustChecker` forks go; `IndexStoreSession` replaces the reader's
 opening (database under the cache root, not beside the store).
+`ToolchainResolution.resolve()` is async since 0010 (it runs `xcode-select` and `xcrun` through `BoundedProcess`).

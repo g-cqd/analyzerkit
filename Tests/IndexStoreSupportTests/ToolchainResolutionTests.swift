@@ -20,16 +20,16 @@ import Testing
             try file(name + "/Toolchains/XcodeDefault.xctoolchain/usr/lib/libIndexStore.dylib")
         }
     }
-    private func fixture(_ body: (Fixture) throws -> Void) throws {
+    private func fixture(_ body: (Fixture) async throws -> Void) async throws {
         let url = FileManager.default.temporaryDirectory.appending(path: "toolchain-\(UUID().uuidString)")
             .resolvingSymlinksInPath()
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: url) }
-        try body(Fixture(root: url.path))
+        try await body(Fixture(root: url.path))
     }
 
-    @Test func `current-user library accepted but unsafe file or parent permissions refused`() throws {
-        try fixture { f in
+    @Test func `current-user library accepted but unsafe file or parent permissions refused`() async throws {
+        try await fixture { f in
             let path = try f.file("Toolchain/usr/lib/libIndexStore.dylib")
             #expect(BinaryTrustChecker.isTrusted(at: path))
             for mode in [0o664, 0o646] {
@@ -48,8 +48,8 @@ import Testing
         }
     }
 
-    @Test func `links resolve before trust and return the checked canonical target`() throws {
-        try fixture { f in
+    @Test func `links resolve before trust and return the checked canonical target`() async throws {
+        try await fixture { f in
             let target = try f.file("real/usr/lib/libIndexStore.dylib")
             let link = f.root + "/linked.dylib"
             try FileManager.default.createSymbolicLink(atPath: link, withDestinationPath: target)
@@ -61,11 +61,11 @@ import Testing
         }
     }
 
-    @Test func `DEVELOPER_DIR wins lazily without consulting subprocesses and accepts an app spelling`() throws {
-        try fixture { f in
+    @Test func `DEVELOPER_DIR wins lazily without consulting subprocesses and accepts an app spelling`() async throws {
+        try await fixture { f in
             let expected = try f.developer("Other Xcode.app/Contents/Developer")
             var commands = 0
-            let outcome = ToolchainResolution.resolve(
+            let outcome = await ToolchainResolution.resolve(
                 environment: ["DEVELOPER_DIR": f.root + "/Other Xcode.app"], home: f.root
             ) { _, _, _ in
                 commands += 1; return nil
@@ -76,13 +76,13 @@ import Testing
         }
     }
 
-    @Test func `rejected override loses to xcode-select and xcrun is later`() throws {
-        try fixture { f in
+    @Test func `rejected override loses to xcode-select and xcrun is later`() async throws {
+        try await fixture { f in
             let rejected = try f.developer("Rejected")
             try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: rejected)
             let selected = try f.developer("Selected")
             var calls: [String] = []
-            let outcome = ToolchainResolution.resolve(
+            let outcome = await ToolchainResolution.resolve(
                 environment: ["DEVELOPER_DIR": f.root + "/Rejected"], home: f.root
             ) {
                 executable, args, env in
@@ -98,12 +98,12 @@ import Testing
         }
     }
 
-    @Test func `xcrun precedes reverse-sorted user toolchains and only safe environment reaches it`() throws {
-        try fixture { f in
+    @Test func `xcrun precedes reverse-sorted user toolchains and only safe environment reaches it`() async throws {
+        try await fixture { f in
             let expected = try f.file("Active/usr/lib/libIndexStore.dylib")
             _ = try f.file("Library/Developer/Toolchains/z.xctoolchain/usr/lib/libIndexStore.dylib")
             var calls: [String] = []
-            let outcome = ToolchainResolution.resolve(
+            let outcome = await ToolchainResolution.resolve(
                 environment: [
                     "DEVELOPER_DIR": "/missing", "DYLD_INSERT_LIBRARIES": "evil", "PATH": "/evil", "HOME": f.root,
                 ], home: f.root
@@ -121,14 +121,15 @@ import Testing
         }
     }
 
-    @Test func `user toolchains are deterministic and no trusted candidate is explicit`() throws {
-        try fixture { f in
+    @Test func `user toolchains are deterministic and no trusted candidate is explicit`() async throws {
+        try await fixture { f in
             let a = try f.file("Library/Developer/Toolchains/a.xctoolchain/usr/lib/libIndexStore.dylib")
             let z = try f.file("Library/Developer/Toolchains/z.xctoolchain/usr/lib/libIndexStore.dylib")
-            let outcome = ToolchainResolution.resolve(environment: [:], home: f.root) { _, _, _ in nil }
+            let outcome = await ToolchainResolution.resolve(environment: [:], home: f.root) { _, _, _ in nil }
             #expect(outcome.libraryPath == z)
             try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: z)
-            #expect(ToolchainResolution.resolve(environment: [:], home: f.root) { _, _, _ in nil }.libraryPath == a)
+            #expect(
+                await ToolchainResolution.resolve(environment: [:], home: f.root) { _, _, _ in nil }.libraryPath == a)
             // CLT is intentionally last; its machine-specific existence is covered by the candidate-order seam below.
         }
     }
@@ -139,21 +140,21 @@ import Testing
         #expect(!BinaryTrustChecker.trustedOwner(501, currentUser: 0))
     }
 
-    @Test func `CLT is last and failure includes every rejection`() throws {
-        try fixture { f in
+    @Test func `CLT is last and failure includes every rejection`() async throws {
+        try await fixture { f in
             let clt = try f.file("CLT/usr/lib/libIndexStore.dylib")
             let resolve = {
-                ToolchainResolution.resolve(environment: [:], home: f.root, commandLineTools: f.root + "/CLT") {
+                await ToolchainResolution.resolve(environment: [:], home: f.root, commandLineTools: f.root + "/CLT") {
                     _, _, _ in nil
                 }
             }
-            #expect(resolve().libraryPath == clt)
+            #expect(await resolve().libraryPath == clt)
             let user = try f.file("Library/Developer/Toolchains/a.xctoolchain/usr/lib/libIndexStore.dylib")
-            #expect(resolve().libraryPath == user)
+            #expect(await resolve().libraryPath == user)
             try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: user)
-            #expect(resolve().libraryPath == clt)
+            #expect(await resolve().libraryPath == clt)
             try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: clt)
-            let failed = resolve()
+            let failed = await resolve()
             #expect(failed.libraryPath == nil)
             #expect(failed.diagnostics.contains { $0.contains(user) && $0.contains("rejected") })
             #expect(failed.diagnostics.contains { $0.contains(clt) && $0.contains("rejected") })
@@ -161,13 +162,13 @@ import Testing
         }
     }
 
-    @Test func `relative paths embedded nulls directories and arbitrary probe executables are refused`() throws {
-        try fixture { f in
+    @Test func `relative paths embedded nulls directories and arbitrary probe executables are refused`() async throws {
+        try await fixture { f in
             #expect(!BinaryTrustChecker.isTrusted(at: "relative.dylib"))
             #expect(!BinaryTrustChecker.isTrusted(at: f.root + "/bad\0path"))
             #expect(!BinaryTrustChecker.isTrusted(at: f.root))
-            #expect(ToolchainResolution.systemProbe("/bin/echo", ["injected"], [:]) == nil)
-            let failed = ToolchainResolution.resolve(
+            #expect(await ToolchainResolution.systemProbe("/bin/echo", ["injected"], [:]) == nil)
+            let failed = await ToolchainResolution.resolve(
                 environment: ["DEVELOPER_DIR": "relative"], home: f.root,
                 commandLineTools: f.root + "/CLT"
             ) { _, _, _ in "relative/swift" }

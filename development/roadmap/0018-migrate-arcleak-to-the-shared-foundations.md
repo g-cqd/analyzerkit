@@ -21,3 +21,4 @@ From 0010: analyzerkit pins indexstore-db at `0390867` (upstream `main`); arclea
 analyzerkit bump. `IndexStorePathFinder` skips `.build/out` as a store of relative unit paths; on Swift 6.4 Swift Build
 writes absolute ones there (checked on analyzerkit's own build, diary 2026-10-29-21), and `IndexStoreSession` refuses a
 relative store by coverage anyway, so the shared discovery includes it.
+`ToolchainResolution.resolve()` is async since 0010 (it runs `xcode-select` and `xcrun` through `BoundedProcess`).
