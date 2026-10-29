@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0043]
+blocked-by: []
 date: 2026-10-29
 ---
 
@@ -19,3 +19,8 @@ and after in the tool's diary.
 
 From 0016: `CorpusScanner.scan` takes `cache: CacheLocation` (root from `--cache-path` or `CacheLocation.defaultRoot`, the
 workspace, the budget) and a `CacheIdentity`; `FactsCache` is gone, so the tool's own cache moves onto the container.
+
+From 0043: `ProjectClassification.load(layout)` once per run, then `classify(path, tree:)` per file, replaces the
+`TestConventions` and `GeneratedCode` calls in `ModelerCore` `Corpus.swift`. Its `issues(for:)` (`project-unknown`, `project-unclaimed`)
+become run notes. 0043's acceptance that every tool selects the same regions for the same fixture and configuration is
+checked here, by a shared fixture each migration runs.
