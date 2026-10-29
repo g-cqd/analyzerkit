@@ -44,11 +44,12 @@ public struct CacheLocation: Sendable, Equatable {
     }
 
     /// `~/Library/Caches/<tool>` on macOS; elsewhere `$XDG_CACHE_HOME/<tool>`, or `~/.cache/<tool>`.
-    public static func defaultRoot(tool: String, environment: [String: String], home: String) -> String { "" }
-}
-
-/// The shards of one workspace (red stub).
-enum FactsStore {
-    /// The paths with an entry, for tests.
-    static func cachedPaths(at location: CacheLocation, identity: CacheIdentity) -> Set<String> { [] }
+    public static func defaultRoot(tool: String, environment: [String: String], home: String) -> String {
+        #if os(macOS)
+            return home + "/Library/Caches/" + tool
+        #else
+            if let xdg = environment["XDG_CACHE_HOME"], xdg.hasPrefix("/") { return xdg + "/" + tool }
+            return home + "/.cache/" + tool
+        #endif
+    }
 }

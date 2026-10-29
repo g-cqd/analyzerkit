@@ -1,5 +1,13 @@
+internal import AemiJSON
+internal import AemiKernel
 internal import AemiRuntime
 internal import SourceCorpus
+
+#if canImport(Darwin)
+    internal import Darwin
+#elseif canImport(Glibc)
+    internal import Glibc
+#endif
 
 #if canImport(FoundationEssentials)
     public import FoundationEssentials
@@ -61,27 +69,164 @@ public enum CorpusScanner {
         width: Int = ProcessInfo.processInfo.activeProcessorCount,
         extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
     ) async throws -> CorpusScan<Facts> {
-        // Red stub (roadmap 0016): no cache.
         let canonical = SourcePath.canonicalized(paths)
-        let files = try await mapConcurrently(canonical, limit: width) { path in
-            await outcome(for: path, salt: salt, extract: extract)
-        }.sorted { $0.path < $1.path }
-        return CorpusScan(files: files, cacheHits: 0, filesRead: files.count, cacheLoadFailure: nil)
+        let started = Self.now()
+        // The shards this run touches, mapped and indexed; no payload is decoded yet.
+        var shards: [Int: Shard] = [:]
+        var corrupt = 0
+        let seed = salt.isEmpty ? 0 : XXH64.hash(Array(salt.utf8))
+        let store = cache.flatMap { location in identity.map { (location, $0) } }
+        if let (location, identity) = store {
+            for index in Set(canonical.map(FactsStore.shardIndex(of:))) {
+                let path = FactsStore.shardPath(location, index)
+                switch Shard.load(path: path, index: index, identity: identity, salt: seed) {
+                case .shard(let shard): shards[index] = shard
+                case .absent: shards[index] = Shard(index: index)
+                case .corrupt:
+                    shards[index] = Shard(index: index, dirty: true)
+                    corrupt += 1
+                }
+            }
+        }
+        let snapshot = shards
+        let outcomes = try await mapConcurrently(canonical, limit: width) { path in
+            await outcome(for: path, shard: snapshot[FactsStore.shardIndex(of: path)], seed: seed, extract: extract)
+        }.sorted { $0.file.path < $1.file.path }
+        try Task.checkCancellation()
+
+        var notes: [String] = []
+        if corrupt > 0 { notes.append("\(corrupt) cache shard(s) could not be decoded and were rebuilt") }
+        if let (location, identity) = store {
+            if let refusal = FactsStore.prepareRoot(location.root) {
+                notes.append(refusal)
+            } else {
+                persist(outcomes, shards: shards, location: location, identity: identity, salt: seed, started: started)
+            }
+        }
+        let files = outcomes.map(\.file)
+        return CorpusScan(
+            files: files, cacheHits: files.reduce(0) { $0 + ($1.cacheHit ? 1 : 0) },
+            filesRead: outcomes.reduce(0) { $0 + ($1.read ? 1 : 0) },
+            cacheLoadFailure: notes.isEmpty ? nil : notes.joined(separator: "; "))
     }
 
+    /// One file's result, whether its bytes were read, and what its shard must record.
+    private struct Outcome<Facts: Sendable>: Sendable {
+        var file: ScannedFile<Facts>
+        var read: Bool
+        var update: StoredEntry?
+    }
+
+    /// The stat key first: a match outside the racy window is a hit with no read. Otherwise the content hash: a match is a
+    /// hit (and the entry's stat key is refreshed). Otherwise the facts are extracted.
     private static func outcome<Facts: Codable & Sendable>(
         for path: String,
-        salt: String,
+        shard: Shard?,
+        seed: UInt64,
         extract: @escaping @Sendable (String, [UInt8]) -> Facts
-    ) async -> ScannedFile<Facts> {
+    ) async -> Outcome<Facts> {
+        let key = StatKey.of(path)
+        let entry = shard?.entries[path]
+        if let shard, let entry, let key, entry.stat == key,
+            entry.stat.modified < shard.writtenAt - FactsStore.racyWindow,
+            let facts = decode(Facts.self, shard.payload(of: entry))
+        {
+            let fingerprint = fingerprint(entry.contentHash, size: Int(key.size))
+            return Outcome(
+                file: ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: true, failure: nil),
+                read: false, update: nil)
+        }
         let bytes: [UInt8]
         do {
             bytes = try BoundedFileReader.read(path: path, cap: BoundedFileReader.sourceByteCap)
         } catch {
-            return ScannedFile(path: path, facts: nil, fingerprint: nil, cacheHit: false, failure: "\(error)")
+            return Outcome(
+                file: ScannedFile(path: path, facts: nil, fingerprint: nil, cacheHit: false, failure: "\(error)"),
+                read: true, update: nil)
         }
-        let fingerprint = ContentFingerprint.of(bytes, salt: salt)
+        let hash = XXH64.hash(bytes, seed: seed)
+        let fingerprint = fingerprint(hash, size: bytes.count)
+        if let shard, let entry, entry.contentHash == hash, let facts = decode(Facts.self, shard.payload(of: entry)) {
+            // A refreshed key lets the next run skip the read; an unchanged one is rewritten only to settle a racy entry.
+            let settled = key.map { StoredEntry(stat: $0, contentHash: hash, payload: entry.payload) }
+            return Outcome(
+                file: ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: true, failure: nil),
+                read: true, update: settled)
+        }
+        // Extraction parses and walks a syntax tree, which recurses once per level; a cache hit does neither, so only
+        // a miss pays for a thread with a large stack (roadmap 0041).
         let facts = await LargeStack.run { extract(path, bytes) }
-        return ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: false, failure: nil)
+        let update = key.flatMap { key in
+            encode(facts).map { StoredEntry(stat: key, contentHash: hash, payload: .bytes($0)) }
+        }
+        return Outcome(
+            file: ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: false, failure: nil),
+            read: true, update: update)
+    }
+
+    /// ``ContentFingerprint``'s spelling, from a hash already known.
+    private static func fingerprint(_ hash: UInt64, size: Int) -> String {
+        String(hash, radix: 16) + "-" + String(size)
+    }
+
+    private static func decode<Facts: Codable>(_: Facts.Type, _ bytes: [UInt8]) -> Facts? {
+        try? AemiJSON.JSONDecoder().decode(Facts.self, from: bytes)
+    }
+
+    private static func encode<Facts: Codable>(_ facts: Facts) -> [UInt8]? {
+        try? AemiJSON.JSONEncoder().encodeToBytes(facts)
+    }
+
+    /// Applies the run's updates to its shards, prunes entries of files that are gone, writes the shards that changed,
+    /// marks the workspace used, and holds the budget.
+    private static func persist<Facts: Sendable>(
+        _ outcomes: [Outcome<Facts>], shards: [Int: Shard], location: CacheLocation, identity: CacheIdentity,
+        salt: UInt64, started: Int64
+    ) {
+        var scanned: Set<String> = []
+        for outcome in outcomes {
+            scanned.insert(outcome.file.path)
+            guard let update = outcome.update, let shard = shards[FactsStore.shardIndex(of: outcome.file.path)] else {
+                continue
+            }
+            shard.set(outcome.file.path, update)
+        }
+        for shard in shards.values {
+            for path in shard.entries.keys
+            where !scanned.contains(path) && !FileManager.default.fileExists(atPath: path) {
+                shard.remove(path)
+            }
+        }
+        let directory = FactsStore.workspaceDirectory(location)
+        let dirty = shards.values.filter(\.isDirty)
+        if !dirty.isEmpty {
+            try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+            let record = directory + "/workspace"
+            if !FileManager.default.fileExists(atPath: record) {
+                try? Data((SourcePath.canonical(location.workspace) + "\n").utf8).write(
+                    to: URL(fileURLWithPath: record), options: .atomic)
+            }
+        }
+        for shard in dirty {
+            let path = FactsStore.shardPath(location, shard.index)
+            if shard.entries.isEmpty {
+                try? FileManager.default.removeItem(atPath: path)
+            } else {
+                try? Data(shard.encoded(identity: identity, salt: salt, writtenAt: started)).write(
+                    to: URL(fileURLWithPath: path), options: .atomic)
+            }
+        }
+        // The workspace's last use, for the budget's least-recently-used order.
+        if FileManager.default.fileExists(atPath: directory) {
+            try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: directory)
+        }
+        FactsStore.enforceBudget(location)
+    }
+
+    /// Nanoseconds since the epoch, the clock file modification times use.
+    private static func now() -> Int64 {
+        var time = timespec()
+        unsafe clock_gettime(CLOCK_REALTIME, &time)
+        return Int64(time.tv_sec) * 1_000_000_000 + Int64(time.tv_nsec)
     }
 }
