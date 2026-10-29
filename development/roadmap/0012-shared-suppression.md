@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-29
 ---
@@ -14,3 +14,27 @@ Red: the directive grammar tests of arcleak, deadwood and dolly run against the 
 parser is not called for comments without the marker (today `SuppressionDirective.parse` is ≈ 55 % of arcleak's parse time).
 
 Acceptance: identical suppression results on the four tools' fixture corpora.
+
+## Done
+
+Diary 2026-10-29-13. New analyzerkit product `Suppression` (SwiftSyntax + AemiKernels): `DirectiveGrammar` parameterised
+by namespaces and trimming, `Directive<Rule>`, `SuppressionTable<Rule>`, one source-accurate comment sweep. Red
+`955924e` (grammar for the four prefix pairs, table precedence, CRLF/UTF-8/EOF offsets, and a counting seam: the
+parser is called for 3 of 8 comments, only those with `@` + a known namespace), green `47c20e7`, vector-boundary and
+partial-prefix tests `6ab0b9c`. The marker scan is AemiKernels' `ByteSet` for `@` over borrowed UTF-8, then a prefix
+compare; comments without it allocate nothing and never ask the converter for a line.
+
+Each tool first got characterization tests of its own wire shape and precedence (arcleak `6bf4e1b`, deadwood `939c659`,
+dolly `811afc8`, fcheck `f2f53a8`), green before and after. Then the adoption, pinning `47c20e7`: arcleak `6494b54`,
+deadwood `93c391a`, dolly `2f6ff42`, fcheck `28fbc07`. Directive and table types stay tool-owned facades so caches and
+JSON keep their shapes (Set rules vs fcheck's ordered array, Kind spellings); deadwood keeps horizontal-only trimming.
+
+Identical results: a four-prefix golden corpus (regions, accepts, reasons; findings and suppressions in every tool) gives
+byte-identical JSON and exit codes before and after in all four tools; the arcleak, deadwood and dolly fixture corpora
+give byte-identical JSON against the previous release binaries (60, 30 and 20 files). Full suites: arcleak 213,
+deadwood 371, dolly 196, fcheck 75, analyzerkit green.
+
+Speed, release, interleaved, same tree, identical directives (probe `research/probes/SuppressionScanProbe.swift`, the
+legacy code copied from arcleak `6bf4e1b`): a 20,000-comment file with 20 directives scans in 0.0027 s median against
+0.284 s (five rounds each). Not yet measured on the reference app end to end; that belongs to 0029's per-tool timings.
+modeler has no suppression today; it adopts the shared grammar with its migration (0022).
