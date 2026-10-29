@@ -54,7 +54,7 @@ A component lives in the lowest package where a second consumer is plausible:
 
 | Package | Holds |
 | --- | --- |
-| Aemi (`aemi`, `AemiJSON`, `AemiProtobuf`, `AemiRegex`) | general mechanisms: byte kernels, I/O, the directory walker (ADR-0013), the interner (ADR-0012), codecs |
+| Aemi (`aemi`, `AemiJSON`, `AemiProtobuf`, `AemiRegex`) | general mechanisms: byte kernels, I/O, the directory walker (ADR-0022), the interner (ADR-0012), codecs |
 | analyzerkit | what every analyzer needs and no other program does: project model, corpus scan and caches, index-store support, CLI surface, report, suppression, control flow |
 | a tool | its rules, its facts, its findings |
 
