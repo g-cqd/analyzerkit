@@ -73,6 +73,12 @@ the walked directory out of the corpus).
 | --- | --- |
 | `ArtifactURI` | how a SARIF log names a file: relative to the base when it is made of unescaped characters, else an absolute percent-encoded `file://` URI |
 | `SarifColumns` | a UTF-8 byte column as the UTF-16 code-unit column SARIF declares, with the byte-order mark handled as the analyzer's parse did |
+| `ReportEnvelope`, `RunNote`, `SkippedFile` | the JSON keys every report carries (ADR-0017): `schemaVersion`, `tool`, `version`, `runNotes`, `skippedFiles`, `timings`, added after the tool's own keys |
+| `ReportSummary.notChecked` | the "(N not checked)" phrase of the one-line summary |
+| `Sarif` | one SARIF 2.1.0 model for the analyzers; optional members omitted when nil, so each tool keeps its bytes |
+| `PathPresenter` | `--relative-to`: a path inside the root loses its prefix, one outside stays absolute, free text loses the prefix |
+| `BaselineFile` | the baseline file: sorted unique fingerprints, the tool, `version` 1 or none; validated on load |
+| `XcodeDiagnostic` | one `path:line:column: severity: [rule] message` line |
 
 `ProjectModel` also holds `Severity` and `Array.partitioned(by:)`, which every analyzer's report used a copy of.
 

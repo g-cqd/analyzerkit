@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 blocked-by: []
 date: 2026-10-29
 ---
@@ -30,5 +30,18 @@ Envelope done: analyzerkit `1a5150c` red, `ab04a91` green (`ReportEnvelope`, `Ru
 xcode and baseline byte-identical to the goldens, JSON equal apart from the added keys, the reference app's decoder shape green.
 Full suites: arcleak 219, deadwood 377, dolly 202, fcheck 82.
 
-Remaining: the shared SARIF model, xcode lines, baseline codec and path presentation in `ReportSupport`, each tool's copy
-deleted, under the same goldens; `--verbose` lifting the ten-path cap arrives with the shared options of 0013.
+## Done
+
+Diary 2026-10-29-15. Shared in `ReportSupport`, each red then green, each adopted by the four tools under the goldens:
+`Sarif` (one model, `5c615c3`), `PathPresenter` and `BaselineFile` (`9bd4543`), `XcodeDiagnostic` (`67d2ee1`).
+Tools' private copies deleted: SARIF structs, payloads, prefix helpers, line formatting (arcleak `096ad67`, `66fbfeb`,
+`6507e74`; deadwood `9b67f22`, `7648b27`, `86478cf`; dolly `0981662`, `37d67e8`, `01510af`; fcheck `51f6940`, `f3ce29f`,
+`e9ab70e`). Each tool keeps what is its own: rule catalogue, degraded results, column policy, encoder, fingerprint, and
+which fields pass through the presenter. Goldens byte-identical throughout; full suites green (219, 377, 202, 82).
+
+One message changed: a baseline without `version` reads "the baseline has no version" in arcleak, deadwood and dolly
+instead of a decoding error; exit code unchanged. fcheck now refuses a baseline whose version is not 1.
+
+Deferred, explicitly: the `--verbose` flag that lifts `RunNote`'s ten-path cap is wired with the shared options (0013);
+no tool lists note paths until the index notes of 0010. modeler, which has no report formatter, adopts all of this in
+0022. Release binaries on the reference app not run in this entry.
