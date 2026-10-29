@@ -12,6 +12,7 @@ reaches the others.
 
 | API | Answers |
 | --- | --- |
+| `ProjectLayout` | the root, local packages and Xcode containers shared by the input paths; DerivedData matched by canonical `WorkspacePath`, not worktree folder names |
 | `CodeRegion` | the kind of code: production, `debugOnly`, `preview`, `test`, `mock`, `generated`, `script` (an option set; a preview in `#if DEBUG` is both) |
 | `CodeRegionScanner` | the line spans of a file that only debug builds (`#if DEBUG`) or previews (`#Preview`, `PreviewProvider`) compile |
 | `TopLevelCodeScanner` | code at file scope that no declaration names: `#Preview` bodies, other freestanding macros, script statements |
@@ -23,9 +24,22 @@ reaches the others.
 | `ReportScope`, `ScopedFinding` | narrows a report to a set of files; a finding is kept when any of its locations is in scope |
 | `ReportSchema` | the version of the JSON report contract shared by the analyzers |
 
-Everything is syntactic or textual: no build, no index, no Foundation
-dependency in the library. Each scanner states its complexity; all are linear
-in their input.
+Scanners are syntactic or textual: no build and no index query. `ProjectLayout` also performs filesystem and plist
+reads through Foundation and SourceCorpus; it never executes manifests or project scripts. Each scanner states its
+complexity; all are linear in their input.
+
+## Library: `IndexStoreSupport`
+
+| API | Answers |
+| --- | --- |
+| `ToolchainResolution.resolve` | the first trusted `libIndexStore.dylib` from `DEVELOPER_DIR`, `xcode-select`, `xcrun`, user toolchains, then CLT; canonical path and rejection diagnostics |
+| `BinaryTrustChecker.assess` | whether the resolved regular file belongs to root/current user and neither it nor its immediate parent is group/world-writable; a reason when rejected |
+
+Shared by arcleak and deadwood. Discovery does not execute project code or load a library; selection is not proof of
+index coverage. System probes are macOS-only; the policy has injected-command fixture tests. This is the first part of
+the product: store normalization, cache-owned databases, reader coverage and the bounded executor are roadmap 0010.
+The current narrow synchronous system probes have no deadline. Permission checks are defense in depth, not a sandbox
+or a race-free guarantee against replacement before dlopen.
 
 ## Library: `SourceCorpus`
 
@@ -37,6 +51,7 @@ the walked directory out of the corpus).
 | --- | --- |
 | `SourcePath` | one spelling per file: absolute, lexically standardized, symlinks resolved; repeats dropped |
 | `SourceDiscovery` | the files under a directory that a predicate accepts, each directory walked once, links out of the root not followed |
+| `PathFilter` | shared substring/glob exclusion rules, anchored at the configuration root, usable for directory pruning |
 | `RepositoryRoot` | the repository a path lives in, so fingerprints do not depend on the checkout's location |
 | `BoundedFileReader` | a regular file's bytes with a size cap, from one `open`, `fstat` and `pread` |
 | `ContentFingerprint` | the XXH64 identity of a file's bytes and a salt, for cache entries |
