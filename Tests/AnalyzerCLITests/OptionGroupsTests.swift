@@ -1,5 +1,7 @@
 import AnalyzerCLI
 import ArgumentParser
+import Foundation
+import ProjectModel
 import Testing
 
 /// A command made of every shared group, as a tool's analysing command declares them (ADR-0019).
@@ -105,4 +107,25 @@ private struct Probe: ParsableCommand {
             #expect(!help.contains(alias), "\(alias) shown in help")
         }
     }
+
+    @Test func `folded region lists are ones every tool's region parser accepts`() throws {
+        let probe = try Probe.parse(["--include-regions", "all", "--include-tests", "--exclude", "debug"])
+        let selection = try RegionSelection(include: probe.input.includeRegions, exclude: probe.input.excludeRegions)
+        #expect(selection.include == CodeRegion.allRegions && selection.exclude == .debugOnly)
+        #expect(!selection.isIncluded(.debugOnly) && selection.isIncluded(.test) && selection.isIncluded(.generated))
+    }
+
+    /// The shared groups' help, pinned: a changed option name, help text or order shows here first. Regenerate only
+    /// for a deliberate surface change (ADR-0019), and say so in the release notes of the five tools.
+    @Test func `the shared groups render the recorded help`() throws {
+        let golden = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "Goldens/help.txt")
+        let help = Probe.helpMessage(columns: 120) + "\n"
+        if ProcessInfo.processInfo.environment["ANALYZERKIT_RECORD_GOLDENS"] == "1" {
+            try Data(help.utf8).write(to: golden)
+        }
+        let recorded = try String(contentsOf: golden, encoding: .utf8)
+        let same = help == recorded
+        #expect(same, "help differs from Goldens/help.txt")
+    }
+
 }
