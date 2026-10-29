@@ -43,7 +43,11 @@ public enum TestConventions {
     }
 
     /// Whether the path alone marks test code.
+    /// - Complexity: O(n) in the path's UTF-8 length; an ASCII path is compared byte by byte, others as characters.
     public static func isTestPath(_ path: String) -> Bool {
+        if let answer = ASCIIPath.isTestPath(path.utf8) {
+            return answer
+        }
         let components = path.split(separator: "/")
         if components.contains(where: { $0 == "Tests" || $0.hasSuffix("Tests") && !$0.contains(".") }) {
             return true
