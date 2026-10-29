@@ -87,7 +87,12 @@ public enum SharedConfiguration {
         }
 
         /// What is wrong, without the path, for a tool that reports the two apart.
-        public var reason: String { "" }
+        public var reason: String {
+            switch self {
+            case .unreadable(_, let reason), .invalid(_, let reason): reason
+            case .unknownKey(_, let key): "unknown key \"\(key)\""
+            }
+        }
 
         public var description: String {
             switch self {
