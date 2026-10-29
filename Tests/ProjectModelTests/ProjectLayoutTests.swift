@@ -100,6 +100,7 @@ import Testing
             let new = try f.store("DD/z-new", workspace: one.containers[1], accessed: 20)
             _ = try f.store("DD/App-other-worktree", workspace: f.root + "/Two/App.xcworkspace", accessed: 100)
             _ = try f.store("DD/App-missing-plist", workspace: nil)
+            _ = try f.store("DD/App-malformed", workspace: nil)
             try f.file("DD/App-malformed/info.plist", "not a plist")
             #expect(one.derivedDataStores(under: [f.root + "/DD"]) == [new, old])
             let two = try #require(ProjectLayout.discover(paths: [f.root + "/Two"]))
