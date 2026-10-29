@@ -19,13 +19,18 @@ struct ControlFlowBuilder {
         var defers: [CodeBlockSyntax] = []
     }
 
-    /// A loop or `switch`, which `break` leaves and, for a loop, `continue` repeats.
+    /// A statement `break` can leave: a loop (which `continue` also repeats), a `switch` (which `fallthrough` moves
+    /// through), or a labelled `do` or `if`, which only a `break` naming its label leaves.
     private struct Frame {
+        enum Kind { case loop, switchStatement, labelledBlock }
+
         var label: String?
-        var isLoop: Bool
+        var kind: Kind
         var continueTarget: Int?
         var scopeDepth: Int
         var breaks: [Open] = []
+        /// The `fallthrough`s of the case being lowered, waiting for the next case's first statement.
+        var fallthroughs: [Open] = []
     }
 
     private struct CatchFrame {
@@ -179,11 +184,11 @@ struct ControlFlowBuilder {
         }
         if let node = statement.as(GuardStmtSyntax.self) { return lowerGuard(node, after: opens) }
         if let node = statement.as(WhileStmtSyntax.self) {
-            return lowerLoop(
-                head: node.conditions, body: node.body, after: opens, repeats: false)
+            return lowerLoop(head: node.conditions, body: node.body, after: opens, headThrows: false)
         }
         if let node = statement.as(ForStmtSyntax.self) {
-            return lowerLoop(head: node.sequence, body: node.body, after: opens, repeats: false)
+            // `for try await x in s` throws from the head: the `try` is the statement's, not the sequence's.
+            return lowerLoop(head: node.sequence, body: node.body, after: opens, headThrows: node.tryKeyword != nil)
         }
         if let node = statement.as(RepeatStmtSyntax.self) { return lowerRepeat(node, after: opens) }
         if let node = statement.as(DoStmtSyntax.self) { return lowerDo(node, after: opens) }
@@ -192,6 +197,9 @@ struct ControlFlowBuilder {
             return opens
         }
         if let node = statement.as(LabeledStmtSyntax.self) {
+            if Self.isLabelledBlock(node.statement) {
+                return lowerLabelledBlock(node.statement, label: node.label.text, after: opens)
+            }
             pendingLabel = node.label.text
             defer { pendingLabel = nil }
             return lowerStatement(node.statement, after: opens)
@@ -208,6 +216,7 @@ struct ControlFlowBuilder {
             return []
         }
         if let node = statement.as(BreakStmtSyntax.self) { return lowerBreak(node, after: opens) }
+        if let node = statement.as(FallThroughStmtSyntax.self) { return lowerFallthrough(node, after: opens) }
         if let node = statement.as(ContinueStmtSyntax.self) { return lowerContinue(node, after: opens) }
         return simple(statement, after: opens)
     }
@@ -239,13 +248,13 @@ struct ControlFlowBuilder {
     }
 
     private mutating func lowerLoop(
-        head: some SyntaxProtocol, body: CodeBlockSyntax, after opens: [Open], repeats: Bool
+        head: some SyntaxProtocol, body: CodeBlockSyntax, after opens: [Open], headThrows: Bool
     ) -> [Open] {
         let label = pendingLabel
         pendingLabel = nil
         let header = step(.condition, head, after: opens)
-        if Self.canThrow(head) { addThrowEdge(from: header) }
-        frames.append(Frame(label: label, isLoop: true, continueTarget: header, scopeDepth: scopes.count))
+        if headThrows || Self.canThrow(head) { addThrowEdge(from: header) }
+        frames.append(Frame(label: label, kind: .loop, continueTarget: header, scopeDepth: scopes.count))
         let end = block(body.statements, after: [Open(node: header, kind: .whenTrue)])
         connect(end, to: header, as: .back)
         let frame = frames.removeLast()
@@ -258,7 +267,7 @@ struct ControlFlowBuilder {
         let top = makeNode(.join, syntax: nil, line: 0)
         connect(opens, to: top)
         let condition = makeNode(.condition, syntax: Syntax(node.condition), line: line(of: node.condition))
-        frames.append(Frame(label: label, isLoop: true, continueTarget: condition, scopeDepth: scopes.count))
+        frames.append(Frame(label: label, kind: .loop, continueTarget: condition, scopeDepth: scopes.count))
         let end = block(node.body.statements, after: [Open(node: top, kind: .next)])
         connect(end, to: condition)
         if Self.canThrow(node.condition) { addThrowEdge(from: condition) }
@@ -272,13 +281,17 @@ struct ControlFlowBuilder {
         pendingLabel = nil
         let subject = step(.condition, node.subject, after: opens)
         if Self.canThrow(node.subject) { addThrowEdge(from: subject) }
-        frames.append(Frame(label: label, isLoop: false, continueTarget: nil, scopeDepth: scopes.count))
+        frames.append(Frame(label: label, kind: .switchStatement, continueTarget: nil, scopeDepth: scopes.count))
         var results: [Open] = []
         var hasCase = false
+        // A case's `fallthrough`s enter the next case's body, beside the subject's own edge to it.
+        var carried: [Open] = []
         for element in node.cases {
             guard case .switchCase(let switchCase) = element else { continue }
             hasCase = true
-            results += block(switchCase.statements, after: [Open(node: subject, kind: .next)])
+            results += block(switchCase.statements, after: [Open(node: subject, kind: .next)] + carried)
+            carried = frames[frames.count - 1].fallthroughs
+            frames[frames.count - 1].fallthroughs = []
         }
         let frame = frames.removeLast()
         return (hasCase ? results : [Open(node: subject, kind: .next)]) + frame.breaks
@@ -292,7 +305,7 @@ struct ControlFlowBuilder {
         catches.removeLast()
         var catchesAll = false
         for clause in node.catchClauses {
-            if clause.catchItems.isEmpty { catchesAll = true }
+            if Self.catchesEverything(clause) { catchesAll = true }
             results += block(clause.body.statements, after: [Open(node: entry, kind: .next)])
         }
         if !catchesAll {
@@ -305,22 +318,47 @@ struct ControlFlowBuilder {
     private mutating func lowerBreak(_ node: BreakStmtSyntax, after opens: [Open]) -> [Open] {
         let id = step(.statement, node, after: opens)
         let wanted = node.label?.text
-        guard let index = frames.lastIndex(where: { wanted == nil || $0.label == wanted }) else { return [] }
-        // Collect the open edges after the defers of the scopes the break leaves.
-        var current = [Open(node: id, kind: .next)]
+        // An unlabelled `break` leaves the innermost loop or `switch`; a labelled `do` or `if` needs its label.
+        guard
+            let index = frames.lastIndex(where: { frame in
+                wanted.map { frame.label == $0 } ?? (frame.kind != .labelledBlock)
+            })
+        else { return [] }
+        frames[index].breaks += leaving(toScopeDepth: frames[index].scopeDepth, from: id)
+        return []
+    }
+
+    /// `fallthrough` leaves its case, running the case's defers, and enters the next case's body.
+    private mutating func lowerFallthrough(_ node: FallThroughStmtSyntax, after opens: [Open]) -> [Open] {
+        let id = step(.statement, node, after: opens)
+        guard let index = frames.lastIndex(where: { $0.kind == .switchStatement }) else { return [] }
+        frames[index].fallthroughs += leaving(toScopeDepth: frames[index].scopeDepth, from: id)
+        return []
+    }
+
+    /// The open edges after `node` once the defers of every scope down to `scopeDepth` have run, innermost first.
+    private mutating func leaving(toScopeDepth scopeDepth: Int, from node: Int) -> [Open] {
+        var current = [Open(node: node, kind: .next)]
         var scopeIndex = scopes.count - 1
-        while scopeIndex >= frames[index].scopeDepth {
+        while scopeIndex >= scopeDepth {
             for body in scopes[scopeIndex].defers.reversed() { current = lowerDefer(body, after: current) }
             scopeIndex -= 1
         }
-        frames[index].breaks += current
-        return []
+        return current
+    }
+
+    /// A labelled `do` or `if`: lowered as itself, and a `break` naming its label reaches what follows it.
+    private mutating func lowerLabelledBlock(_ statement: StmtSyntax, label: String, after opens: [Open]) -> [Open] {
+        frames.append(Frame(label: label, kind: .labelledBlock, continueTarget: nil, scopeDepth: scopes.count))
+        let results = lowerStatement(statement, after: opens)
+        let frame = frames.removeLast()
+        return results + frame.breaks
     }
 
     private mutating func lowerContinue(_ node: ContinueStmtSyntax, after opens: [Open]) -> [Open] {
         let id = step(.statement, node, after: opens)
         let wanted = node.label?.text
-        guard let frame = frames.last(where: { $0.isLoop && (wanted == nil || $0.label == wanted) }),
+        guard let frame = frames.last(where: { $0.kind == .loop && (wanted == nil || $0.label == wanted) }),
             let target = frame.continueTarget
         else { return [] }
         escape([Open(node: id, kind: .next)], toScopeDepth: frame.scopeDepth, then: target)
@@ -328,6 +366,26 @@ struct ControlFlowBuilder {
     }
 
     // MARK: - Syntax questions
+
+    /// Whether a labelled statement is a `do` or an `if`, which only a labelled `break` leaves.
+    private static func isLabelledBlock(_ statement: StmtSyntax) -> Bool {
+        statement.is(DoStmtSyntax.self)
+            || statement.as(ExpressionStmtSyntax.self)?.expression.is(IfExprSyntax.self) == true
+    }
+
+    /// Whether a `catch` clause catches every error: no pattern, or an item that only binds or discards the error
+    /// (`let error`, `var e`, `_`, `let _`) with no `where`. A type, a case or a condition matches only some errors.
+    static func catchesEverything(_ clause: CatchClauseSyntax) -> Bool {
+        clause.catchItems.isEmpty
+            || clause.catchItems.contains { item in item.whereClause == nil && bindsOnly(item.pattern) }
+    }
+
+    private static func bindsOnly(_ pattern: PatternSyntax?) -> Bool {
+        guard let pattern else { return true }
+        if pattern.is(IdentifierPatternSyntax.self) || pattern.is(WildcardPatternSyntax.self) { return true }
+        if let binding = pattern.as(ValueBindingPatternSyntax.self) { return bindsOnly(binding.pattern) }
+        return pattern.as(ExpressionPatternSyntax.self)?.expression.is(DiscardAssignmentExprSyntax.self) == true
+    }
 
     private static let terminalCalls: Set<String> = ["fatalError", "preconditionFailure", "exit", "abort"]
 
