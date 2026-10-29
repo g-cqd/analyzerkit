@@ -18,6 +18,7 @@ let package = Package(
     name: "analyzerkit",
     platforms: [.macOS(.v15)],
     products: [
+        .library(name: "AnalyzerCLI", targets: ["AnalyzerCLI"]),
         .library(name: "Suppression", targets: ["Suppression"]),
         .library(name: "IndexStoreSupport", targets: ["IndexStoreSupport"]),
         .library(name: "ProjectModel", targets: ["ProjectModel"]),
@@ -35,6 +36,11 @@ let package = Package(
         .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "5542d37ff0edb17c822b48fe69bff6e792354c57"),
     ],
     targets: [
+        // What every analyzer's command line shares: exit statuses and when a run fails (ADR-0018), then the option
+        // groups of ADR-0006.
+        .target(name: "AnalyzerCLI", dependencies: ["ProjectModel"], swiftSettings: strictSwiftSettings),
+        .testTarget(
+            name: "AnalyzerCLITests", dependencies: ["AnalyzerCLI", "ProjectModel"], swiftSettings: strictSwiftSettings),
         .target(
             name: "Suppression",
             dependencies: [
