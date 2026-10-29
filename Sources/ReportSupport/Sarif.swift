@@ -26,8 +26,7 @@ public enum Sarif {
 
         /// `path` as the report spells it, through ``ArtifactURI``.
         public init(path: String, root: String?) {
-            uri = path
-            uriBaseId = nil
+            (uri, uriBaseId) = ArtifactURI.location(of: path, root: root)
         }
 
         public init(uri: String, uriBaseId: String? = nil) {
@@ -159,8 +158,11 @@ public enum Sarif {
         public let toolExecutionNotifications: [Notification]?
 
         public init(failure: String?, warnings: [String] = []) {
-            executionSuccessful = true
-            toolExecutionNotifications = nil
+            executionSuccessful = failure == nil
+            let notifications =
+                (failure.map { [Notification(level: "error", message: Text($0))] } ?? [])
+                + warnings.map { Notification(level: "warning", message: Text($0)) }
+            toolExecutionNotifications = notifications.isEmpty ? nil : notifications
         }
     }
 
@@ -176,7 +178,9 @@ public enum Sarif {
         public init(tool: Tool, invocations: [Invocation]?, root: String?, results: [Result]) {
             self.tool = tool
             self.invocations = invocations
-            originalUriBaseIds = nil
+            originalUriBaseIds = root.map {
+                [ArtifactURI.baseID: ArtifactLocation(uri: ArtifactURI.baseURI(of: $0))]
+            }
             self.results = results
         }
     }
