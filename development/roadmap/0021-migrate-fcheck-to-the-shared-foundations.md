@@ -1,6 +1,6 @@
 ---
 status: not-started
-blocked-by: [0007, 0014, 0016, 0043]
+blocked-by: [0007, 0016, 0043]
 date: 2026-10-29
 ---
 
@@ -16,3 +16,6 @@ pinned snapshot of a g-cqd package; the migrated tool must match them byte for b
 
 Acceptance: goldens green; the tool's suite green; its own copies of the replaced files deleted; timings on maintastic before
 and after in the tool's diary.
+
+Also (from 0014): with the shared output options, `--verbose` prints `SharedConfiguration.Resolved.verboseLines`;
+fcheck discards them until then.

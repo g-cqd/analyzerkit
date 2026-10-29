@@ -1,0 +1,18 @@
+{
+  "exclude": [".swiftpm/", ".build/", "DerivedData/", "Generated/", "Package.swift"],
+  "includeRegions": "preview",
+  "arcleak": {
+    "exclude": ["scripts/"],
+    "rules": { "task-nonterminating-self": { "severity": "error" } }
+  },
+  "deadwood": {
+    "production": true,
+    "rules": { "unused-import": { "enabled": false } }
+  },
+  "dolly": {
+    "duplication": { "minimumTokens": 120, "minimumSimilarity": 0.9 }
+  },
+  "fcheck": {
+    "severity": { "leak-on-exit": "error" }
+  }
+}
