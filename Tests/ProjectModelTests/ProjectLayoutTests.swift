@@ -117,4 +117,42 @@ import Testing
             #expect(layout.derivedDataStores(under: [f.root + "/OtherBuild"]).isEmpty)
         }
     }
+    @Test func `oversized DerivedData metadata is refused before decoding`() throws {
+        try fixture { f in
+            try f.file("Repo/.git", "gitdir: elsewhere")
+            try f.file("Repo/App.xcodeproj/project.pbxproj")
+            let layout = try #require(ProjectLayout.discover(paths: [f.root + "/Repo"]))
+            _ = try f.store("DD/App-large", workspace: layout.containers[0])
+            let data = try PropertyListSerialization.data(
+                fromPropertyList: [
+                    "WorkspacePath": layout.containers[0], "Padding": String(repeating: "x", count: 1 << 20),
+                ], format: .binary, options: 0)
+            try data.write(to: URL(fileURLWithPath: f.root + "/DD/App-large/info.plist"))
+            #expect(layout.derivedDataStores(under: [f.root + "/DD"]).isEmpty)
+        }
+    }
+
+    @Test func `missing access dates use directory mtime and symlink spellings match canonical containers`() throws {
+        try fixture { f in
+            try f.file("Repo/.git", "gitdir: elsewhere")
+            try f.file("Repo/App.xcodeproj/project.pbxproj")
+            try FileManager.default.createSymbolicLink(atPath: f.root + "/Link", withDestinationPath: f.root + "/Repo")
+            let layout = try #require(ProjectLayout.discover(paths: [f.root + "/Link"]))
+            #expect(layout.root == f.root + "/Repo")
+            var expected: [String] = []
+            for (name, date) in [("new", 20.0), ("old", 10.0)] {
+                expected.append(try f.store("DD/" + name, workspace: nil))
+                let data = try PropertyListSerialization.data(
+                    fromPropertyList: [
+                        "WorkspacePath": f.root + "/Link/App.xcodeproj"
+                    ], format: .xml, options: 0)
+                try data.write(to: URL(fileURLWithPath: f.root + "/DD/" + name + "/info.plist"))
+                try FileManager.default.setAttributes(
+                    [.modificationDate: Date(timeIntervalSince1970: date)],
+                    ofItemAtPath: f.root + "/DD/" + name)
+            }
+            #expect(layout.derivedDataStores(under: [f.root + "/DD"]) == expected)
+        }
+    }
+
 }
