@@ -33,6 +33,8 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
         // The option groups every analyzer's command line shares (AnalyzerCLI); the tools already use it.
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.8.2"),
+        // OrderedCollections for the shared configuration's merge; the range AemiJSON already resolves.
+        .package(url: "https://github.com/apple/swift-collections.git", "1.7.1"..<"1.8.0"),
         // The byte kernels, POSIX file and bounded-concurrency primitives `SourceCorpus` is built on.
         .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "f6da05cd0efdf60700e854efb5b6092eae89b8c5"),
         // The JSON coder behind the per-file facts cache.
@@ -43,7 +45,10 @@ let package = Package(
         // file, merged, every key checked (ADR-0020).
         .target(
             name: "AnalyzerConfiguration",
-            dependencies: ["ProjectModel", "SourceCorpus", .product(name: "AemiJSONCore", package: "AemiJSON")],
+            dependencies: [
+                "ProjectModel", "SourceCorpus", .product(name: "AemiJSONCore", package: "AemiJSON"),
+                .product(name: "OrderedCollections", package: "swift-collections"),
+            ],
             swiftSettings: strictSwiftSettings),
         .testTarget(
             name: "AnalyzerConfigurationTests", dependencies: ["AnalyzerConfiguration"],
