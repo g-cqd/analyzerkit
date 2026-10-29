@@ -268,5 +268,17 @@ public enum SharedConfiguration {
 extension SharedConfiguration.Resolved {
     /// What `--verbose` prints about the configuration (ADR-0020 item 5): the files read, then each key more than one
     /// source set and which won.
-    public func verboseLines(tool: String) -> [String] { [] }
+    public func verboseLines(tool: String) -> [String] {
+        let prefix = "\(tool): configuration: "
+        guard !sources.isEmpty else { return [prefix + "no file found; built-in defaults"] }
+        func list(_ sources: [SharedConfiguration.Source]) -> String {
+            sources.map(\.description).joined(separator: ", ")
+        }
+        return [prefix + "read " + list(sources)]
+            + overrides.map { override in
+                override.combined
+                    ? prefix + "\(override.key) combined from " + list(override.overridden + [override.winner])
+                    : prefix + "\(override.key) from \(override.winner), over " + list(override.overridden)
+            }
+    }
 }
