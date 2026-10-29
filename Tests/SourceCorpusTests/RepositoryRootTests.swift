@@ -1,6 +1,7 @@
 import Foundation
-import SourceCorpus
 import Testing
+
+@testable import SourceCorpus
 
 /// What `RepositoryRoot` answers for real trees: an ordinary clone (`.git` is a directory), a worktree or submodule (`.git`
 /// is a file), a repository nested in another, and paths outside any repository.
@@ -63,6 +64,21 @@ struct RepositoryRootTests {
             #expect(RepositoryRoot.common(of: [a, loose]) == nil, "one file outside")
             #expect(RepositoryRoot.common(of: []) == nil)
         }
+    }
+
+    @Test func `a corpus probes each directory for .git once, not once per file`() {
+        // 1,000 files in 10 directories of one repository, three levels below its root.
+        let corpus = (0..<10).flatMap { directory in
+            (0..<100).map { "/repository/Sources/Module\(directory)/File\($0).swift" }
+        }
+        var probes = 0
+        let root = RepositoryRoot.common(of: corpus) { path in
+            probes += 1
+            return path == "/repository/.git"
+        }
+        #expect(root == "/repository")
+        // Module0, Sources and the root once, then one new module directory per other module.
+        #expect(probes <= 10 + 3, "\(probes) probes for 10 directories")
     }
 
     @Test func `a path is made relative to its root, and left alone outside it`() {
