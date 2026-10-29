@@ -132,4 +132,48 @@ import Testing
             // CLT is intentionally last; its machine-specific existence is covered by the candidate-order seam below.
         }
     }
+    @Test func `ownership accepts root and current user but not a different account`() {
+        #expect(BinaryTrustChecker.trustedOwner(0, currentUser: 501))
+        #expect(BinaryTrustChecker.trustedOwner(501, currentUser: 501))
+        #expect(!BinaryTrustChecker.trustedOwner(502, currentUser: 501))
+        #expect(!BinaryTrustChecker.trustedOwner(501, currentUser: 0))
+    }
+
+    @Test func `CLT is last and failure includes every rejection`() throws {
+        try fixture { f in
+            let clt = try f.file("CLT/usr/lib/libIndexStore.dylib")
+            let resolve = {
+                ToolchainResolution.resolve(environment: [:], home: f.root, commandLineTools: f.root + "/CLT") {
+                    _, _, _ in nil
+                }
+            }
+            #expect(resolve().libraryPath == clt)
+            let user = try f.file("Library/Developer/Toolchains/a.xctoolchain/usr/lib/libIndexStore.dylib")
+            #expect(resolve().libraryPath == user)
+            try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: user)
+            #expect(resolve().libraryPath == clt)
+            try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: clt)
+            let failed = resolve()
+            #expect(failed.libraryPath == nil)
+            #expect(failed.diagnostics.contains { $0.contains(user) && $0.contains("rejected") })
+            #expect(failed.diagnostics.contains { $0.contains(clt) && $0.contains("rejected") })
+            #expect(failed.diagnostics.last == "libIndexStore: no trusted library found")
+        }
+    }
+
+    @Test func `relative paths embedded nulls directories and arbitrary probe executables are refused`() throws {
+        try fixture { f in
+            #expect(!BinaryTrustChecker.isTrusted(at: "relative.dylib"))
+            #expect(!BinaryTrustChecker.isTrusted(at: f.root + "/bad\0path"))
+            #expect(!BinaryTrustChecker.isTrusted(at: f.root))
+            #expect(ToolchainResolution.systemProbe("/bin/echo", ["injected"], [:]) == nil)
+            let failed = ToolchainResolution.resolve(
+                environment: ["DEVELOPER_DIR": "relative"], home: f.root,
+                commandLineTools: f.root + "/CLT"
+            ) { _, _, _ in "relative/swift" }
+            #expect(failed.libraryPath == nil)
+            #expect(failed.diagnostics.contains { $0.contains("not an absolute developer directory") })
+        }
+    }
+
 }
