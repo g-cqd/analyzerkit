@@ -4,6 +4,6 @@ public enum XcodeDiagnostic {
     public static func line(
         path: String, line: Int, column: Int, severity: String, rule: String?, message: String
     ) -> String {
-        ""
+        "\(path):\(line):\(column): \(severity): " + (rule.map { "[\($0)] " } ?? "") + message
     }
 }
