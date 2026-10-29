@@ -179,7 +179,9 @@ public enum SharedConfiguration {
         }
         let value: JSONValue
         do {
-            value = JSONValue(try AemiJSON.parse([UInt8](data)).root)
+            // A repeated key would keep only its last value, a key silently dropped (ADR-0020 item 4).
+            value = JSONValue(
+                try AemiJSON.parse([UInt8](data), options: JSONParseOptions(duplicateKeys: .throwError)).root)
         } catch {
             throw .invalid(path: path, reason: "\(error)")
         }
