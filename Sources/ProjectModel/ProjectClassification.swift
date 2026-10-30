@@ -254,11 +254,23 @@ public struct ProjectClassification: Sendable {
     /// ``classify(_:)`` with the file's content signals on top: a test framework import makes it test, a generator's
     /// header makes it generated.
     public func classify(_ path: String, tree: SourceFileSyntax) -> FileClassification {
-        let base = classify(path)
-        var region = base.region
+        classify(path, content: Self.contentRegion(path: path, tree: tree))
+    }
+
+    /// What the file's content alone says of its region: test for a test-framework import, generated for a generator's
+    /// header (or a generated name). It depends on the file only, so a facts cache keyed by content may keep it; the
+    /// project's part changes without the file changing, and is joined per run by ``classify(_:content:)``.
+    public static func contentRegion(path: String, tree: SourceFileSyntax) -> CodeRegion {
+        var region: CodeRegion = []
         if TestConventions.importsTestFramework(tree) { region.insert(.test) }
         if GeneratedCode.isGenerated(path: path, tree: tree) { region.insert(.generated) }
-        return FileClassification(region: region, provenance: base.provenance)
+        return region
+    }
+
+    /// ``classify(_:)`` joined with a ``contentRegion(path:tree:)`` computed earlier, perhaps cached.
+    public func classify(_ path: String, content: CodeRegion) -> FileClassification {
+        let base = classify(path)
+        return FileClassification(region: base.region.union(content), provenance: base.provenance)
     }
 
     /// What the run should report about `paths`: files under projects that could not be read, and files inside a
