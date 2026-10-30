@@ -167,7 +167,8 @@ public struct CacheOptions: ParsableArguments, Sendable {
     @Option(
         name: .customLong("cache-path"),
         help: ArgumentHelp(
-            "Facts-cache file (default: a per-workspace file in the user cache directory).", valueName: "file"))
+            "The facts cache's root directory (default: the tool's directory in the user cache directory).",
+            valueName: "directory"))
     public var cachePath: String?
 
     @Flag(name: .customLong("no-cache"), help: "Do not read or write the facts cache.")
