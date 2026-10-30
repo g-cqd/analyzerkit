@@ -32,3 +32,23 @@ public enum RunOutcome {
         return fails(severities, strict: strict) ? .findings : .success
     }
 }
+
+extension ExitStatus {
+    /// A search ran and matched nothing (ADR-0026): status 1, as `grep` exits.
+    ///
+    /// The value of ``findings`` under the name a search command means; not a case of its own, so ``allCases`` stays
+    /// the sysexits list every consumer reads.
+    public static var noMatch: ExitStatus { .findings }
+}
+
+/// How a search command that finished ends (ADR-0026): it prints matches, never findings, so `--strict` does not apply.
+public enum SearchOutcome {
+    /// 70 when it read none of the files it found, else 0 when something matched, else ``ExitStatus/noMatch``.
+    ///
+    /// Matches from an index store count with no file read, so the file counts only decide when nothing matched.
+    public static func status(matchCount: Int, analyzedFileCount: Int = 0, skippedFileCount: Int = 0) -> ExitStatus {
+        if matchCount > 0 { return .success }
+        if analyzedFileCount == 0, skippedFileCount > 0 { return .internalFailure }
+        return .noMatch
+    }
+}
