@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-30
 ---
@@ -17,3 +17,18 @@ property read without a call (`p.location`) stays used.
 
 Acceptance: deadwood's goldens updated only where a finding appears, each one checked by hand; maintastic's report before
 and after in deadwood's diary (new findings listed, none disappearing).
+
+## Done
+
+deadwood red `d361bd0`, green `b7fc0ab`. A reference that is the callee of a call with arguments records their labels
+(`Reference.callLabels`, `_` for an unlabeled one). Labels are cached under `"a"`, and the cache header moved to
+`facts 3`. When the corpus has a function whose parameters fit those labels (in order, defaulted or variadic ones
+optional), the by-name match drops variables and constants with a written non-function type. When no function fits,
+every match stays, because the call may be `callAsFunction` on the property's type. A property of function type, or with
+no written type, is always kept. 5 tests; deadwood's 393 pass with its goldens unchanged.
+
+maintastic (`parts-MAIN-24752-stock-handling`, its `.deadwood.json`, debug builds of `fcbb3f7` and `b7fc0ab`): 57 findings
+before, 58 after, none gone. The new one, `TicketOverviewViewModel.ticketTypeDescription`, was checked by hand. It is
+never read; the name's only other uses are labelled calls to two private functions `ticketTypeDescription(ticketType:)`
+and `ticketTypeDescription(for:)`. The analyzed count moved from 2,977 to 2,981 between the runs: the working tree changed
+under them (it is someone's live checkout).
