@@ -21,12 +21,24 @@
         public let database: IndexStoreDB
         /// How the store covered the analyzed files when it was opened.
         public let coverage: IndexCoverage
+        /// Whether a file's index facts are current, for any file: the analyzed ones from ``coverage``, others looked
+        /// up once each and remembered for the session's life.
+        public let freshness: IndexFreshness
 
         init(store: String, databaseDirectory: String, database: IndexStoreDB, coverage: IndexCoverage) {
             self.store = store
             self.databaseDirectory = databaseDirectory
             self.database = database
             self.coverage = coverage
+            let reader = UncheckedDatabase(database)
+            freshness = IndexFreshness(
+                coverage: coverage, unitDate: { reader.database.dateOfLatestUnitFor(filePath: $0) },
+                modificationDate: Self.modificationDate)
+        }
+
+        /// A file's modification time, nil when it cannot be read.
+        @Sendable static func modificationDate(_ file: String) -> Date? {
+            (try? FileManager.default.attributesOfItem(atPath: file))?[.modificationDate] as? Date
         }
 
         /// What opening a store gave.
@@ -67,13 +79,17 @@
             }
             let coverage = IndexCoverage.classify(
                 analyzedFiles, unitDate: { database.dateOfLatestUnitFor(filePath: $0) },
-                modificationDate: { file in
-                    (try? FileManager.default.attributesOfItem(atPath: file))?[.modificationDate] as? Date
-                })
+                modificationDate: modificationDate)
             guard coverage.isUsable else { return .notUsable(store: store, coverage: coverage) }
             return .usable(
                 IndexStoreSession(
                     store: store, databaseDirectory: databaseDirectory, database: database, coverage: coverage))
         }
+    }
+
+    /// IndexStoreDB serialises its own access (see ``IndexStoreSession/database``) but is not declared `Sendable`.
+    private struct UncheckedDatabase: @unchecked Sendable {
+        let database: IndexStoreDB
+        init(_ database: IndexStoreDB) { self.database = database }
     }
 #endif
