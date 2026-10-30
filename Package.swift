@@ -140,6 +140,7 @@ let package = Package(
                 .product(name: "AemiIO", package: "aemi"),
                 .product(name: "AemiJSON", package: "AemiJSON"),
                 .product(name: "AemiProtobufCore", package: "AemiProtobuf"),
+                .product(name: "AemiProtobuf", package: "AemiProtobuf"),
             ],
             swiftSettings: strictSwiftSettings
         ),
@@ -175,7 +176,10 @@ let package = Package(
         ),
         .testTarget(
             name: "CorpusScanTests",
-            dependencies: ["CorpusScan", "SourceCorpus"],
+            dependencies: [
+                "CorpusScan", "SourceCorpus", .product(name: "AemiProtobuf", package: "AemiProtobuf"),
+                .product(name: "AemiProtobufCore", package: "AemiProtobuf"),
+            ],
             swiftSettings: strictSwiftSettings
         ),
         // The repository's own rules: the documentation law of `development/WHITE-PAPER.md` (roadmap 0001).

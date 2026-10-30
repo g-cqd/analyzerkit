@@ -74,12 +74,15 @@ struct JSONOnlySample: Codable, Sendable { var name: String }
         try ProtobufDecoder().decode(ProtoSample.self, fromBytes: ProtobufEncoder().encodeToBytes(sample))
     }
 
-    @Test func `every helper round-trips, and default values take no bytes`() throws {
+    @Test func `every helper round-trips, and default values take no bytes but an enumeration's`() throws {
         let full = ProtoSample(
             name: "n", note: "", offset: -42, flag: true, kind: .special, tags: ["a", "", "b"],
             children: [.init(line: 3), .init(line: 0)], child: .init(line: 0), wide: .max)
         #expect(try Self.roundTrip(full) == full)
-        #expect(try ProtobufEncoder().encodeToBytes(ProtoSample()).isEmpty)
+        // An enumeration has no default case to leave out, so it is the one field a default value writes.
+        var onlyKind = WireWriter()
+        onlyKind.field(5, ProtoSample.Kind.plain)
+        #expect(try ProtobufEncoder().encodeToBytes(ProtoSample()) == onlyKind.bytes)
         #expect(try Self.roundTrip(ProtoSample()) == ProtoSample())
         #expect(try Self.roundTrip(ProtoSample(note: nil)).note == nil, "nil stays apart from an empty string")
     }

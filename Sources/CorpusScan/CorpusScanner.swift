@@ -1,5 +1,5 @@
-internal import AemiJSON
 internal import AemiKernel
+public import AemiProtobuf
 internal import AemiRuntime
 internal import SourceCorpus
 
@@ -41,7 +41,7 @@ public struct ScannedFile<Facts: Sendable>: Sendable {
 }
 
 /// What ``CorpusScanner/scan(paths:cache:identity:salt:width:extract:)`` found.
-public struct CorpusScan<Facts: Codable & Sendable>: Sendable {
+public struct CorpusScan<Facts: Sendable>: Sendable {
     /// One entry per distinct canonical path, sorted by path.
     public let files: [ScannedFile<Facts>]
     public let cacheHits: Int
@@ -85,6 +85,53 @@ public enum CorpusScanner {
         keepingBytes: Bool = false,
         extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
     ) async throws -> CorpusScan<Facts> {
+        try await scan(
+            paths: paths, cache: cache, identity: identity, salt: salt, width: width, keepingBytes: keepingBytes,
+            codec: .json, extract: extract)
+    }
+
+    /// ``scan(paths:cache:identity:salt:width:keepingBytes:extract:)`` for facts with AemiProtobuf's fast path: payloads
+    /// are protobuf, about half the size of JSON and faster to decode (roadmap 0017). The codec is part of the salt, so a
+    /// payload another codec wrote is never decoded.
+    public static func scan<Facts: AemiProtoFastEncodable & AemiProtoFastDecodable & Sendable>(
+        paths: [String],
+        cache: CacheLocation? = nil,
+        identity: CacheIdentity? = nil,
+        salt: String = "",
+        width: Int = ProcessInfo.processInfo.activeProcessorCount,
+        keepingBytes: Bool = false,
+        extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
+    ) async throws -> CorpusScan<Facts> {
+        try await scan(
+            paths: paths, cache: cache, identity: identity, salt: salt + PayloadCodec<Facts>.protobufSalt,
+            width: width, keepingBytes: keepingBytes, codec: .protobuf, extract: extract)
+    }
+
+    /// The protobuf path for facts that are `Codable` too: the protobuf payload wins.
+    public static func scan<Facts: Codable & AemiProtoFastEncodable & AemiProtoFastDecodable & Sendable>(
+        paths: [String],
+        cache: CacheLocation? = nil,
+        identity: CacheIdentity? = nil,
+        salt: String = "",
+        width: Int = ProcessInfo.processInfo.activeProcessorCount,
+        keepingBytes: Bool = false,
+        extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
+    ) async throws -> CorpusScan<Facts> {
+        try await scan(
+            paths: paths, cache: cache, identity: identity, salt: salt + PayloadCodec<Facts>.protobufSalt,
+            width: width, keepingBytes: keepingBytes, codec: .protobuf, extract: extract)
+    }
+
+    private static func scan<Facts: Sendable>(
+        paths: [String],
+        cache: CacheLocation?,
+        identity: CacheIdentity?,
+        salt: String,
+        width: Int,
+        keepingBytes: Bool,
+        codec: PayloadCodec<Facts>,
+        extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
+    ) async throws -> CorpusScan<Facts> {
         let canonical = SourcePath.canonicalized(paths)
         let started = Self.now()
         // The shards this run touches, mapped and indexed; no payload is decoded yet.
@@ -108,7 +155,7 @@ public enum CorpusScanner {
         let outcomes = try await mapConcurrently(canonical, limit: width) { path in
             await outcome(
                 for: path, shard: snapshot[FactsStore.shardIndex(of: path)], seed: seed, keepingBytes: keepingBytes,
-                extract: extract)
+                codec: codec, extract: extract)
         }.sorted { $0.file.path < $1.file.path }
         try Task.checkCancellation()
 
@@ -137,18 +184,19 @@ public enum CorpusScanner {
 
     /// The stat key first: a match outside the racy window is a hit with no read. Otherwise the content hash: a match is a
     /// hit (and the entry's stat key is refreshed). Otherwise the facts are extracted.
-    private static func outcome<Facts: Codable & Sendable>(
+    private static func outcome<Facts: Sendable>(
         for path: String,
         shard: Shard?,
         seed: UInt64,
         keepingBytes: Bool,
+        codec: PayloadCodec<Facts>,
         extract: @escaping @Sendable (String, [UInt8]) -> Facts
     ) async -> Outcome<Facts> {
         let key = StatKey.of(path)
         let entry = shard?.entries[path]
         if !keepingBytes, let shard, let entry, let key, entry.stat == key,
             entry.stat.modified < shard.writtenAt - FactsStore.racyWindow,
-            let facts = decode(Facts.self, shard.payload(of: entry))
+            let facts = codec.decode(shard.payload(of: entry))
         {
             let fingerprint = fingerprint(entry.contentHash, size: Int(key.size))
             return Outcome(
@@ -165,7 +213,7 @@ public enum CorpusScanner {
         }
         let hash = XXH64.hash(bytes, seed: seed)
         let fingerprint = fingerprint(hash, size: bytes.count)
-        if let shard, let entry, entry.contentHash == hash, let facts = decode(Facts.self, shard.payload(of: entry)) {
+        if let shard, let entry, entry.contentHash == hash, let facts = codec.decode(shard.payload(of: entry)) {
             // A refreshed key lets the next run skip the read; an unchanged one is rewritten only to settle a racy entry.
             let settled = key.map { StoredEntry(stat: $0, contentHash: hash, payload: entry.payload) }
             return Outcome(
@@ -178,7 +226,7 @@ public enum CorpusScanner {
         // a miss pays for a thread with a large stack (roadmap 0041).
         let facts = await LargeStack.run { extract(path, bytes) }
         let update = key.flatMap { key in
-            encode(facts).map { StoredEntry(stat: key, contentHash: hash, payload: .bytes($0)) }
+            codec.encode(facts).map { StoredEntry(stat: key, contentHash: hash, payload: .bytes($0)) }
         }
         return Outcome(
             file: ScannedFile(
@@ -190,14 +238,6 @@ public enum CorpusScanner {
     /// ``ContentFingerprint``'s spelling, from a hash already known.
     private static func fingerprint(_ hash: UInt64, size: Int) -> String {
         String(hash, radix: 16) + "-" + String(size)
-    }
-
-    private static func decode<Facts: Codable>(_: Facts.Type, _ bytes: [UInt8]) -> Facts? {
-        try? AemiJSON.JSONDecoder().decode(Facts.self, from: bytes)
-    }
-
-    private static func encode<Facts: Codable>(_ facts: Facts) -> [UInt8]? {
-        try? AemiJSON.JSONEncoder().encodeToBytes(facts)
     }
 
     /// Applies the run's updates to its shards, prunes entries of files that are gone, writes the shards that changed,
