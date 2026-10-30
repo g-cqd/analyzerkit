@@ -327,11 +327,15 @@ public struct ProjectClassification: Sendable {
     }
 
     /// `path` itself, then each enclosing directory up to `/`.
+    /// `path` and each of its parents, ending at `/` for an absolute path and at `.` for a relative one.
     static func ancestors(of path: String) -> [String] {
         var result = [path]
         var current = path
         while current != "/", !current.isEmpty {
-            current = ProjectPaths.parent(current)
+            let parent = ProjectPaths.parent(current)
+            // A bare name's parent is `.`, and `.`'s is `.` again: stop at the fixed point.
+            guard parent != current else { break }
+            current = parent
             result.append(current)
         }
         return result
