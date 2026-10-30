@@ -140,7 +140,7 @@ public enum SharedConfiguration {
         tool: Tool, explicit: String?, currentDirectory: String, analyzedPaths: [String]
     ) throws(Failure) -> [File] {
         if let explicit {
-            let path = absolute(explicit, in: currentDirectory)
+            let path = SourcePath.absolute(explicit, in: currentDirectory)
             guard FileManager.default.fileExists(atPath: path) else {
                 throw .unreadable(path: path, reason: "no such file")
             }
@@ -156,7 +156,7 @@ public enum SharedConfiguration {
         if !here.isEmpty { return here }
         // ADR-0021: the nearest directory holding a file, from the analyzed paths up to their repository root; two
         // stat calls per directory and no listing. Outside a repository, nothing beyond the current directory.
-        let start = commonDirectory(of: analyzedPaths.map { absolute($0, in: currentDirectory) })
+        let start = commonDirectory(of: analyzedPaths.map { SourcePath.absolute($0, in: currentDirectory) })
         guard let start, let repository = RepositoryRoot.detect(from: start + "/") else { return [] }
         var directory = start
         while true {
@@ -182,10 +182,6 @@ public enum SharedConfiguration {
             common = Array(zip(common, components).prefix { $0 == $1 }.map(\.0))
         }
         return "/" + common.joined(separator: "/")
-    }
-
-    private static func absolute(_ path: String, in directory: String) -> String {
-        SourcePath.canonical(path.hasPrefix("/") ? path : directory + "/" + path)
     }
 
     private static func parent(of path: String) -> String {
