@@ -33,7 +33,8 @@ RULES:
   --rules <list>          Only these rules, comma-separated (see the `rules` subcommand).
 
 CACHE:
-  --cache-path <file>     Facts-cache file (default: a per-workspace file in the user cache directory).
+  --cache-path <directory>
+                          The facts cache's root directory (default: the tool's directory in the user cache directory).
   --no-cache              Do not read or write the facts cache.
 
 INDEX STORE:
