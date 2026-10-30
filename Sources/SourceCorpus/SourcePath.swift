@@ -28,6 +28,23 @@ public enum SourcePath {
         URL(fileURLWithPath: path).standardized.resolvingSymlinksInPath().path
     }
 
+    /// `path` made absolute against `directory`, then ``canonical(_:)``: how a path from a command line or a
+    /// configuration file becomes the spelling the corpus and the index store use.
+    ///
+    /// An absolute `path` ignores `directory`; an empty one is the directory. A tilde is a name, not a home directory:
+    /// the shell expands it before a tool sees it.
+    /// - Complexity: as ``canonical(_:)``.
+    public static func absolute(_ path: String, in directory: String) -> String {
+        if path.utf8.first == UInt8(ascii: "/") { return canonical(path) }
+        if path.isEmpty { return canonical(directory) }
+        return canonical(directory.hasSuffix("/") ? directory + path : directory + "/" + path)
+    }
+
+    /// ``absolute(_:in:)`` against the current directory.
+    public static func absolute(_ path: String) -> String {
+        absolute(path, in: FileManager.default.currentDirectoryPath)
+    }
+
     /// Canonicalizes every path and drops repeats, keeping first-seen order so the corpus is deterministic
     /// for a given argument list.
     /// - Complexity: O(*n*) canonicalizations and hash insertions.
