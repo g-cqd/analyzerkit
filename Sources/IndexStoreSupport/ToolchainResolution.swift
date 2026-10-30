@@ -54,6 +54,61 @@ public enum ToolchainResolution {
     public struct Outcome: Sendable, Equatable {
         public let libraryPath: String?
         public let diagnostics: [String]
+        /// The resolved toolchain's `sourcekit-lsp`, beside the library (`usr/bin` next to `usr/lib`), trusted and
+        /// executable; nil when there is no library or the toolchain has no such server (roadmap 0052).
+        public let sourceKitLSPPath: String?
+
+        init(libraryPath: String?, diagnostics: [String], sourceKitLSPPath: String? = nil) {
+            self.libraryPath = libraryPath
+            self.diagnostics = diagnostics
+            self.sourceKitLSPPath = sourceKitLSPPath
+        }
+    }
+
+    /// Why a `sourcekit-lsp` given on the command line is not run.
+    public enum SourceKitLSPRejection: Error, Sendable, Equatable, CustomStringConvertible {
+        case notAbsolute
+        case notExecutable(String)
+        case notTrusted(String, reason: String)
+
+        public var description: String {
+            switch self {
+            case .notAbsolute: "sourcekit-lsp: an explicit path must be absolute"
+            case .notExecutable(let path): "sourcekit-lsp: \(path) is not an executable file"
+            case .notTrusted(let path, let reason): "sourcekit-lsp: \(path) is not trusted: \(reason)"
+            }
+        }
+    }
+
+    /// An explicit `sourcekit-lsp`: absolute, an executable regular file, and trusted as a library is (ADR-0014). The
+    /// path returned is the canonical one that was checked.
+    public static func explicitSourceKitLSP(_ path: String) -> Result<String, SourceKitLSPRejection> {
+        guard path.hasPrefix("/"), !path.utf8.contains(0) else { return .failure(.notAbsolute) }
+        let resolved = SourcePath.canonical(path)
+        guard isExecutableFile(resolved) else { return .failure(.notExecutable(resolved)) }
+        let trust = BinaryTrustChecker.assess(resolved)
+        if let reason = trust.rejection { return .failure(.notTrusted(trust.path, reason: reason)) }
+        return .success(trust.path)
+    }
+
+    /// The `sourcekit-lsp` of the toolchain `library` belongs to, with a diagnostic either way.
+    static func sourceKitLSP(besideLibrary library: String) -> (path: String?, diagnostic: String) {
+        let usr = URL(fileURLWithPath: library).deletingLastPathComponent().deletingLastPathComponent()
+        let candidate = usr.appendingPathComponent("bin/sourcekit-lsp").path
+        switch explicitSourceKitLSP(candidate) {
+        case .success(let path): return (path, "sourcekit-lsp: selected \(path)")
+        case .failure(.notExecutable): return (nil, "sourcekit-lsp: none at \(candidate)")
+        case .failure(let rejection): return (nil, rejection.description)
+        }
+    }
+
+    private static func isExecutableFile(_ path: String) -> Bool {
+        var status = stat()
+        // SAFETY: path and fixed-size stat storage live for the whole synchronous call; no pointer escapes.
+        guard unsafe stat(path, &status) == 0, UInt32(status.st_mode) & UInt32(S_IFMT) == UInt32(S_IFREG) else {
+            return false
+        }
+        return unsafe access(path, X_OK) == 0
     }
 
     /// Commands are injected for deterministic tests. `xcode-select` reads the system selection without an override;
@@ -94,7 +149,11 @@ public enum ToolchainResolution {
             }
             return nil
         }
-        func success(_ library: String) -> Outcome { Outcome(libraryPath: library, diagnostics: diagnostics) }
+        func success(_ library: String) -> Outcome {
+            let server = sourceKitLSP(besideLibrary: library)
+            return Outcome(
+                libraryPath: library, diagnostics: diagnostics + [server.diagnostic], sourceKitLSPPath: server.path)
+        }
         if let override = environment["DEVELOPER_DIR"], !override.isEmpty,
             let library = developer(override, source: "DEVELOPER_DIR")
         {
