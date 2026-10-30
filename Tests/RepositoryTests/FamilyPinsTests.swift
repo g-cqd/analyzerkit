@@ -19,10 +19,10 @@ import Testing
         try body(root.path)
     }
 
-    private func run(_ root: String) throws -> (status: Int32, output: String) {
+    private func run(_ root: String, _ packages: String...) throws -> (status: Int32, output: String) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = [Self.script, root]
+        process.arguments = [Self.script, root] + packages
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
@@ -84,6 +84,19 @@ import Testing
         ]) { root in
             let (status, output) = try run(root)
             #expect(status == 1, "\(output)")
+        }
+    }
+
+    @Test func `only the packages named are read`() throws {
+        try family([
+            "Kit": Self.manifest(#"revision: "0390867818c28241af4650eb4ef29af5669335a3""#),
+            "Tool": Self.manifest(#"revision: "0390867818c28241af4650eb4ef29af5669335a3""#),
+            "Unrelated": Self.manifest(#"branch: "main""#),
+        ]) { root in
+            let (status, output) = try run(root, "Kit", "Tool")
+            #expect(status == 0, "\(output)")
+            #expect(!output.contains("Unrelated"))
+            #expect(try run(root).status == 1)
         }
     }
 }
