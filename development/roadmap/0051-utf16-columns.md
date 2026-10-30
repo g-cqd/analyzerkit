@@ -29,7 +29,7 @@ others transcode the line's bytes in place (`transcode` from an `ArraySlice` ite
 counts exactly as `String(decoding:as:)` does; an offset inside a surrogate pair gives its scalar's start. Safe code
 only: array indexing, which the release probe shows is fast enough. 8 tests, red at `a397131`.
 
-Release probe (`/tmp/liprobe`, 10,000 lines, 472 KB, every tenth line non-ASCII, a third CRLF; best of 200 and 50,
+Release probe (`research/probes/LineIndexProbe.swift`, 10,000 lines, 472 KB, every tenth line non-ASCII, a third CRLF; best of 200 and 50,
 three runs, loaded machine), against swift-search's `TextPositions` in the same binary:
 
 | | `LineIndex` | `TextPositions` |

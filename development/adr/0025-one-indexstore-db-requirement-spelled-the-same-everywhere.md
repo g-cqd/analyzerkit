@@ -12,7 +12,7 @@ analyzerkit requires indexstore-db at `revision: "0390867…"` (upstream `main`,
 which does not depend on indexstore-db yet, so nothing conflicts today. The conflict comes with the first tool that takes
 analyzerkit's head: swift-search's probe of sourcekit-lsp, which requires `release/6.4.x`, failed on exactly that.
 
-SwiftPM probe (`/tmp/pinprobe`, 2026-10-30): a root depending on two local packages that require indexstore-db.
+SwiftPM probe (`research/probes/pins/requirement-spellings.sh`, 2026-10-30): a root depending on two local packages that require indexstore-db.
 
 | Case | Requirements | Result |
 | --- | --- | --- |
@@ -26,8 +26,7 @@ SwiftPM compares the requirements as written, not the commits they name: every p
 same way. swift-lmdb comes only through indexstore-db and follows it.
 
 Which spelling: `release/6.4.x` has none of `main`'s 28 commits since they split, among them "Read symbol records
-concurrently when collecting occurrences" (`c2cc524`). Measured with a probe built twice (`/tmp/isprobe-main`,
-`/tmp/isprobe-r64`), on maintastic's Xcode store (8,774 units, 263,332 symbol names), Xcode's `libIndexStore`, runs
+concurrently when collecting occurrences" (`c2cc524`). Measured with a probe built twice (`research/probes/pins/IndexStoreDBRevisionProbe.swift`, built against each), on maintastic's Xcode store (8,774 units, 263,332 symbol names), Xcode's `libIndexStore`, runs
 interleaved, load average 40–144, best of 4:
 
 | Operation | `main` `0390867` | `release/6.4.x` `64aa0b2` |

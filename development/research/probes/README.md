@@ -16,3 +16,7 @@ defect turns it into a test in the repository that owns the code.
 
 Fixtures are built with `swiftc -index-store-path … -emit-module` from the toolchain whose `libIndexStore.dylib` the tools
 load. `-typecheck` does not record per-file units and makes every file look stale.
+- `pins/requirement-spellings.sh`: whether SwiftPM accepts indexstore-db required in two spellings (ADR-0025, cases C1–C6).
+- `pins/IndexStoreDBRevisionProbe.swift`: import, name lookups and reference scans on a real store, built once per
+  indexstore-db revision (ADR-0025's table).
+- `LineIndexProbe.swift`: `LineIndex` against swift-search's `TextPositions` (roadmap 0051's table).
