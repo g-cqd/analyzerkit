@@ -25,6 +25,19 @@ public struct ScannedFile<Facts: Sendable>: Sendable {
     public let cacheHit: Bool
     /// Why the file could not be read, so the analyzer reports it degraded rather than dropping it unseen.
     public let failure: String?
+    /// The file's bytes, when the scan was asked to keep them (`keepingBytes`) and the file could be read.
+    public let bytes: [UInt8]?
+
+    init(
+        path: String, facts: Facts?, fingerprint: String?, cacheHit: Bool, failure: String?, bytes: [UInt8]? = nil
+    ) {
+        self.path = path
+        self.facts = facts
+        self.fingerprint = fingerprint
+        self.cacheHit = cacheHit
+        self.failure = failure
+        self.bytes = bytes
+    }
 }
 
 /// What ``CorpusScanner/scan(paths:cache:identity:salt:width:extract:)`` found.
@@ -58,6 +71,8 @@ public enum CorpusScanner {
     ///   - identity: the build reading and writing the cache; nil trusts no cache.
     ///   - salt: what else the facts depend on, mixed into every fingerprint.
     ///   - width: the most files in flight; below one behaves as one.
+    ///   - keepingBytes: hand every readable file's bytes back in ``ScannedFile/bytes``, reading them on a stat-key hit
+    ///     too, for a tool that needs the text after the scan; off, a settled hit reads nothing.
     ///   - extract: facts from a file's path and bytes.
     /// - Throws: `CancellationError`.
     /// - Complexity: O(*n*) in the corpus size over `width` workers, plus the cache's load and persist.
@@ -67,6 +82,7 @@ public enum CorpusScanner {
         identity: CacheIdentity? = nil,
         salt: String = "",
         width: Int = ProcessInfo.processInfo.activeProcessorCount,
+        keepingBytes: Bool = false,
         extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
     ) async throws -> CorpusScan<Facts> {
         let canonical = SourcePath.canonicalized(paths)
@@ -90,7 +106,9 @@ public enum CorpusScanner {
         }
         let snapshot = shards
         let outcomes = try await mapConcurrently(canonical, limit: width) { path in
-            await outcome(for: path, shard: snapshot[FactsStore.shardIndex(of: path)], seed: seed, extract: extract)
+            await outcome(
+                for: path, shard: snapshot[FactsStore.shardIndex(of: path)], seed: seed, keepingBytes: keepingBytes,
+                extract: extract)
         }.sorted { $0.file.path < $1.file.path }
         try Task.checkCancellation()
 
@@ -123,11 +141,12 @@ public enum CorpusScanner {
         for path: String,
         shard: Shard?,
         seed: UInt64,
+        keepingBytes: Bool,
         extract: @escaping @Sendable (String, [UInt8]) -> Facts
     ) async -> Outcome<Facts> {
         let key = StatKey.of(path)
         let entry = shard?.entries[path]
-        if let shard, let entry, let key, entry.stat == key,
+        if !keepingBytes, let shard, let entry, let key, entry.stat == key,
             entry.stat.modified < shard.writtenAt - FactsStore.racyWindow,
             let facts = decode(Facts.self, shard.payload(of: entry))
         {
@@ -150,7 +169,9 @@ public enum CorpusScanner {
             // A refreshed key lets the next run skip the read; an unchanged one is rewritten only to settle a racy entry.
             let settled = key.map { StoredEntry(stat: $0, contentHash: hash, payload: entry.payload) }
             return Outcome(
-                file: ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: true, failure: nil),
+                file: ScannedFile(
+                    path: path, facts: facts, fingerprint: fingerprint, cacheHit: true, failure: nil,
+                    bytes: keepingBytes ? bytes : nil),
                 read: true, update: settled)
         }
         // Extraction parses and walks a syntax tree, which recurses once per level; a cache hit does neither, so only
@@ -160,7 +181,9 @@ public enum CorpusScanner {
             encode(facts).map { StoredEntry(stat: key, contentHash: hash, payload: .bytes($0)) }
         }
         return Outcome(
-            file: ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: false, failure: nil),
+            file: ScannedFile(
+                path: path, facts: facts, fingerprint: fingerprint, cacheHit: false, failure: nil,
+                bytes: keepingBytes ? bytes : nil),
             read: true, update: update)
     }
 
