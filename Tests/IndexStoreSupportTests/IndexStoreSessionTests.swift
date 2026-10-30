@@ -3,6 +3,7 @@
     import IndexStoreDB
     import IndexStoreSupport
     import ReportSupport
+    import SourceCorpus
     import Testing
 
     /// A compiler to build fixture stores with, or nil when the machine has none.
@@ -182,6 +183,23 @@
                     return
                 }
                 #expect(session.coverage.files.map(\.coverage) == [.indexed, .changedSinceBuild, .notIndexed])
+            }
+        }
+
+        /// The session's freshness agrees with its coverage on the analyzed files and looks up the others (0053).
+        @Test func `freshness answers analyzed files from the coverage and looks up the rest`() async throws {
+            try await tree { t in
+                let hub = try t.file("src/Hub.swift", "class Hub {\n    var plugin: Plugin?\n    init() {}\n}\n")
+                let plugin = try t.file("src/Plugin.swift", "class Plugin {\n    var hub: Hub?\n    init() {}\n}\n")
+                try t.index(["src/Hub.swift", "src/Plugin.swift"], into: "store")
+                let outside = try t.file("src/Outside.swift", "let y = 2\n")
+                guard case .usable(let session) = try await open(t, "store", [hub]) else {
+                    Issue.record("the store did not open")
+                    return
+                }
+                #expect(session.freshness.isCurrent(hub))
+                #expect(session.freshness.isCurrent(SourcePath.canonical(plugin)))
+                #expect(!session.freshness.isCurrent(outside))
             }
         }
     }
