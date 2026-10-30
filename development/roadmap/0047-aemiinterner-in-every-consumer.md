@@ -12,7 +12,7 @@ nothing uses it. Where each consumer moves, and what it must show:
 | consumer | tables | where | gate |
 |---|---|---|---|
 | deadwood | USRs: declarations, references, the index graph (35 `String`-keyed tables in the sources) | 0024 | index run on maintastic faster, findings identical |
-| dolly | per-file token tables and `CorpusAssembler` | 0027 | suffix arrays and findings identical; assembly faster |
+| dolly | per-file token tables and `CorpusAssembler` | 0027 | closed: identical outputs, but assembly 15.9 against 13.8 ms; not adopted (0027) |
 | arcleak | type and member names, the ownership graph | 0023 | findings identical; graph build faster |
 | modeler | `ModelFacts`' name index, reentrancy bookkeeping | here | measure first; adopt only on a gain in a real run |
 | fcheck | rule tables (static, small) | here | measure first; likely no change |
