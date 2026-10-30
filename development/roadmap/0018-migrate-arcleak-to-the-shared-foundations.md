@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-29
 ---
@@ -30,3 +30,37 @@ From 0043: `ProjectClassification.load(layout)` once per run, then `classify(pat
 `TestConventions` and `GeneratedCode` calls in `ArcLeakCore` `Facts/RegionSpanFact.swift`, `Facts/FileFacts.swift`, `Extraction/FactsExtraction.swift`. Its `issues(for:)` (`project-unknown`, `project-unclaimed`)
 become run notes. 0043's acceptance that every tool selects the same regions for the same fixture and configuration is
 checked here, by a shared fixture each migration runs.
+
+## Done
+
+arcleak on analyzerkit `e61f619`, in two steps, each red first.
+
+- **Step A** (red `d027a4d`, green `e356ac2`).
+  - **Options.** `analyze` takes the six shared option groups. `--include`/`--exclude` are deprecated aliases that
+    print a note. `--exclude-path`, `--rules`, `--report-new-since` (`NewSince`), `--quiet`, `--verbose` and
+    `--timings` are new.
+  - **Cache.** `FactsCache` is gone; `CorpusScanner` stores `ExtractedFacts` (the facts, or why the file was not
+    analysed), salted by the defines, contracts and platforms. The cache keeps the content region; the project
+    region is joined every run, and `project-unknown`/`project-unclaimed` are run notes.
+  - **Byte equality.** `String(validating:)` keeps a byte-order mark that `String(data:encoding:)` dropped, and the
+    SARIF column test caught the shift, so the mark is stripped before parsing. `cacheMisses` is still counted under
+    `--no-cache`, because the golden records it.
+- **Step B** (red `0e8e23b`, green `ee3e4ec`).
+  - **Stores.** They open through `IndexStoreSession`, with the database under the cache root rather than in an
+    `IndexDatabase/` beside the store. They are found and named through `IndexStoreLocation`, so a build directory
+    resolves to its store and `.build/out` is found.
+  - **Auto-build.** `--index-store-build` runs through `BoundedProcess`.
+  - **Deleted forks.** `ProcessExecutor`, the trust shim, `IndexStoreFallbackManager`, `IndexStorePathFinder` and
+    `IndexStoreLocator` are gone.
+  - **Staleness.** The session's coverage is the run-wide gate. Checking freshness a second time on top of it had
+    cost 20 s of CPU on the reference app.
+
+Reports are byte-equal to the release on analyzerkit's sources and the reference app, in xcode, JSON and SARIF, with and
+without an index store, and the goldens are unchanged. The one difference is on stderr: the index run on analyzerkit
+now finds `.build/out` and uses it, still with 0 findings. 228 tests pass, with a 400 MB peak.
+
+Timings on the reference app, debug build:
+
+- **No cache:** 7.85 s cold.
+- **Warm cache:** 0.70 s, the same 3 findings.
+- **With the Xcode store:** 7.4 s real and 52 s user, as before.
