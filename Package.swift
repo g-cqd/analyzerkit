@@ -116,6 +116,8 @@ let package = Package(
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 // Package manifests are read as syntax, never run (ADR-0024).
                 .product(name: "SwiftParser", package: "swift-syntax"),
+                // The active `#if` clauses under --define (ADR-0029).
+                .product(name: "SwiftIfConfig", package: "swift-syntax"),
             ],
             swiftSettings: strictSwiftSettings
         ),
