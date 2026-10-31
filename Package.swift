@@ -49,8 +49,8 @@ let package = Package(
             url: "https://github.com/swiftlang/indexstore-db.git", revision: "0390867818c28241af4650eb4ef29af5669335a3"),
         // The wire format of the facts cache's shards (ADR-0011), pinned like AemiJSON to one revision on the same aemi.
         .package(
-            url: "https://github.com/g-cqd/AemiProtobuf.git", revision: "d635eac46736d4a90bfae45c8dcd238c40e39ce4"),
-        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "d4e414153e1c6dfa344dd68dcc752a6cf08e56d0"),
+            url: "https://github.com/g-cqd/AemiProtobuf.git", revision: "5d6e868179262f0b1a48297808953730e97cd720"),
+        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "2bb8507e079f552bfd893d5cdf487aab98e86a78"),
     ],
     targets: [
         // The configuration every analyzer reads: one directory, the shared `.swift-analyzers.json` and the tool's own
