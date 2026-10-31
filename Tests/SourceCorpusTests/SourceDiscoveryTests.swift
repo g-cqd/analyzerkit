@@ -130,7 +130,9 @@ import Testing
     }
 
     /// An unreadable directory contributes nothing, and says so: the analyzer can note it rather than drop it unseen.
-    @Test func `an unreadable directory is reported and the rest is listed`() throws {
+    /// Not as root (the Linux CI container): root reads a directory whatever its mode.
+    @Test(.enabled(if: ProcessInfo.processInfo.userName != "root"))
+    func `an unreadable directory is reported and the rest is listed`() throws {
         try Scratch.with { scratch in
             try populate(scratch)
             try scratch.write("root/Locked/C.swift")
