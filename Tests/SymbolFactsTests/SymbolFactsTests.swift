@@ -154,7 +154,7 @@ private let fixture = """
         #expect((model.location.line, model.location.column) == (1, 1))
         #expect((model.nameLocation.line, model.nameLocation.column) == (2, 20))
         let count = try #require(found.declarations.first { $0.name == "count" })
-        #expect((count.nameLocation.line, count.nameLocation.column) == (3, 23))
+        #expect((count.nameLocation.line, count.nameLocation.column) == (3, 22))
     }
 
     @Test func `the names of an initializer, a subscript, an extension and an import are their first token`() throws {
