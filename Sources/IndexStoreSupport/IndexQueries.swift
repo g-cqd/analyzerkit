@@ -103,13 +103,19 @@
 
         /// The canonical occurrences of the symbols named exactly `name` (`fetch(id:)`, `Store`).
         public func occurrences(named name: String) -> [Occurrence] {
-            canonical(containing: name, anchorEnd: true) { _ in true }
+            canonical(containing: name, anchorStart: true, anchorEnd: true) { _ in true }
         }
 
         /// The canonical occurrences of the symbols whose base name is `name`: `fetch` finds `fetch(id:)` and `fetch()`,
         /// not `fetchAll()`. A prefix query, filtered on the name before `(`.
         public func occurrences(baseNamed name: String) -> [Occurrence] {
-            canonical(containing: name, anchorEnd: false) { Self.baseName($0) == name }
+            canonical(containing: name, anchorStart: true, anchorEnd: false) { Self.baseName($0) == name }
+        }
+
+        /// The canonical occurrences of every symbol whose name satisfies `keep`: a scan of every name, which a regex search
+        /// makes.
+        public func occurrences(whereName keep: (String) -> Bool) -> [Occurrence] {
+            canonical(containing: "", anchorStart: false, anchorEnd: false, keep: keep)
         }
 
         /// The names of the types that contain `occurrence`, outermost first, from `childOf` relations; at most 32
@@ -134,11 +140,13 @@
 
         // MARK: Conversion
 
-        private func canonical(containing name: String, anchorEnd: Bool, keep: (String) -> Bool) -> [Occurrence] {
+        private func canonical(containing name: String, anchorStart: Bool, anchorEnd: Bool, keep: (String) -> Bool)
+            -> [Occurrence]
+        {
             var found: [Occurrence] = []
             var local = Spellings()
             database.forEachCanonicalSymbolOccurrence(
-                containing: name, anchorStart: true, anchorEnd: anchorEnd, subsequence: false, ignoreCase: false
+                containing: name, anchorStart: anchorStart, anchorEnd: anchorEnd, subsequence: false, ignoreCase: false
             ) { occurrence in
                 if keep(occurrence.symbol.name) { found.append(self.convert(occurrence, &local)) }
                 return true
