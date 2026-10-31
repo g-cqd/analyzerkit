@@ -58,4 +58,10 @@ Wave 1, 2026-10-31. Every consumer is on the wave-1 set:
   - The app's command line (`analyze <root> --only-from - --format sarif --relative-to <root>`) gives the same result
     counts under dolly 0.11.0 and 0.12.0.
   - Its old pins (the 0.11.0, 0.10.3 and 0.10.2 release commits) are no longer on the tools' `main`.
-
+- **Wave 2:** aemi `45a62fd` (the lock and the swift-quality defaults). The bootstraps' `AEMI=` moved: AemiJSON
+  `1de8c9f`, AemiRegex `a3b775a`, AemiMarkdown `e29b962` and ask `09a6d5f`. So did AemiProtobuf's `tools.lock`
+  (`783b930`) and Atelier's `helpers.lock` (`5fdec61`, `348ad3a`, `be14512`). The swift-quality references at aemi `f6da05c` moved to
+  `45a62fd` (AemiJSON, AemiRegex, Atelier `5b9bd6c`): that file differs only in its defaults. Every gate ran locally on
+  the new releases and passed with the same baselines. AemiJSON's and AemiProtobuf's CI were already red before either
+  wave (a NaN coding path and a Linux release build in AemiJSON, and `setup-swift`'s gpg step on AemiProtobuf's Linux job). Their
+  analyzer jobs pass.
