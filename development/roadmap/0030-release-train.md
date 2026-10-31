@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: in-progress
 blocked-by: []
 date: 2026-10-29
 ---
@@ -29,3 +29,23 @@ Red: a release-note lint (sections present, each filled or "none", checksums mat
 tools' release workflow; it fails on today's free-form notes.
 
 Acceptance: three waves shipped; every consumer on wave 3.
+
+## Progress
+
+Wave 1, 2026-10-31:
+
+- **The release-note lint.** aemi red `cbf67b1`, green `9b19354`, in `swift-tool.yml`'s publish job. It reads
+  `release-notes/<tag>.md` from the tool's repository, requires the nine sections, each filled or "none", checks any
+  checksum written against the published `.sha256` files, fills Archives from them, and publishes the result instead
+  of generated notes. aemi's CI runs it on fixtures.
+- **Notes** are written for arcleak 0.13.0, deadwood 0.12.0, dolly 0.12.0, fcheck 0.2.0 and modeler 0.2.0, and the
+  versions are bumped. the reference app is not touched (the owner's call).
+- **Linux had been broken across the family**, unseen while CI went unread:
+  - aemi's directory walker named Darwin's `DIR` (`5eeac3f`, `7c14a00`), and AemiTestKit imported Testing publicly
+    where nothing used it (`18b02d3`). aemi's CI had no Linux build; it has one now (`7e67739`, `a3ac239`), limited to
+    the products the tools take.
+  - analyzerkit used `NSString`, `ObjCBool` and `subpaths(atPath:)`, which FoundationEssentials lacks, and Glibc's
+    `pthread_getattr_np` in two tests (`59bca29`, `bfceb6f`). A test of unreadable directories cannot run as root.
+  - The tools' tests called `createFile` without using its result, which Linux does not discard.
+- **Pins** for the wave: aemi `18b02d3`, AemiRegex `c0307ab`, AemiJSON `6495fd1`, AemiProtobuf `a475f6f`, analyzerkit
+  `bfceb6f`.
