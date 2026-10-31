@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: in-progress
 blocked-by: [0030]
 date: 2026-10-29
 ---
@@ -26,3 +26,36 @@ and refresh `.dolly-baseline.json` only if dolly's findings changed.
 Red: aemi's script refuses an archive whose SHA-256 does not match the lock (test with a tampered archive).
 
 Acceptance: every consumer on the same pin set after each wave, green.
+
+## Progress
+
+Wave 1, 2026-10-31. Every consumer is on the wave-1 set:
+
+- **aemi:** red `f0a80e7`, green `7558abf`.
+  - `Scripts/analyzers.sh` reads its tools, corpus, lock, cache and download URL from `ANALYZERS_*`. It runs
+    `modeler check` and everything else with `analyze`, and passes each `.<tool>-baseline.json` that exists.
+  - `Scripts/analyzers.lock` holds one line per tool: version, macOS hash, Linux hash.
+  - `Scripts/tests/analyzers-test.sh` serves fake releases from a `file://` URL. It shows that a tampered archive and
+    a tool missing from the lock both exit 2 before anything runs. CI runs it.
+  - The defaults of `swift-quality.yml` moved to 0.13.0, 0.12.0 and 0.12.0. They are still literals; reading them from
+    the lock is left.
+- **AemiJSON (`8c00703`), AemiRegex (`ae59f93`), AemiMarkdown (`3737e8c`), ask (`a4ed168`):**
+  - Each `Scripts/analyzers.sh` is now a bootstrap. It pins an aemi commit, keeps its own corpus, fetches the script
+    and the lock from `raw.githubusercontent.com` into `~/Library/Caches/g-cqd-analyzers/aemi-<commit>`, and execs it.
+  - All four are clean. AemiRegex's gate had been red already, under deadwood 0.11.1 too: `ByteRange` was unused, and
+    `296f418` removes it.
+  - ask's CI cache path follows the script, and its ADR-0022 is amended (`796b937`).
+- **AemiProtobuf (`8f25cf5`):**
+  - fcheck 0.2.0 and modeler 0.2.0 now come from release archives; `install_source` is gone, and its roadmap 0015 is
+    done.
+  - fcheck reports three `cut-then-decode` warnings in `ProtoJSONNumber.split`, the same as under 0.1.2. They appeared
+    because the old pin predated the rule learning `dropFirst`. The slices are ASCII digits, so the warnings are
+    accepted in place.
+  - That is a gap in the rule: a `prefix` whose predicate admits only ASCII cannot straddle a character. It is noted
+    for fcheck.
+- **Atelier (`71cb60f`, `5956e54`, `28504f8`):**
+  - `helpers.lock` pins the release commits, since its format and its decision D15 require commits.
+  - The app's command line (`analyze <root> --only-from - --format sarif --relative-to <root>`) gives the same result
+    counts under dolly 0.11.0 and 0.12.0.
+  - Its old pins (the 0.11.0, 0.10.3 and 0.10.2 release commits) are no longer on the tools' `main`.
+
