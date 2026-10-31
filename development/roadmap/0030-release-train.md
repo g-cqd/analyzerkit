@@ -49,3 +49,17 @@ Wave 1, 2026-10-31:
   - The tools' tests called `createFile` without using its result, which Linux does not discard.
 - **Pins** for the wave: aemi `18b02d3`, AemiRegex `c0307ab`, AemiJSON `6495fd1`, AemiProtobuf `a475f6f`, analyzerkit
   `bfceb6f`.
+- **Shipped.** The tag `analyzerkit-wave-1` is at `bfceb6f`. Every tag's CI passed and published both archives, the
+  artifact bundle and their `.sha256` files. The lint filled each note's Archives section. fcheck's SwiftPM checksum,
+  recomputed from the downloaded bundle, matches its note.
+
+  | tool | tag | commit | macOS arm64 SHA-256 | Linux x86_64 SHA-256 |
+  |---|---|---|---|---|
+  | arcleak | v0.13.0 | `8556878` | `766f69e4…` | `8d9c2447…` |
+  | deadwood | v0.12.0 | `67b4095` | `5b962437…` | `780b56a1…` |
+  | dolly | v0.12.0 | `f5a2632` | `07700f9e…` | `fa08f218…` |
+  | fcheck | v0.2.0 | `310335f` | `95392d58…` | `2c5c3055…` |
+  | modeler | v0.2.0 | `073d929` | `1afc4d85…` | `4d012b06…` |
+
+  The full hashes are in aemi's `Scripts/analyzers.lock`. The consumers are on this set (0031). There were no pull
+  requests: the owner asked for direct commits to `main`.
