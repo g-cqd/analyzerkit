@@ -28,6 +28,7 @@ let package = Package(
         .library(name: "ReportSupport", targets: ["ReportSupport"]),
         .library(name: "WordPiece", targets: ["WordPiece"]),
         .library(name: "ControlFlow", targets: ["ControlFlow"]),
+        .library(name: "SymbolFacts", targets: ["SymbolFacts"]),
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
@@ -162,6 +163,25 @@ let package = Package(
         .testTarget(
             name: "ControlFlowTests",
             dependencies: ["ControlFlow", .product(name: "SwiftParser", package: "swift-syntax")],
+            swiftSettings: strictSwiftSettings
+        ),
+        // What one file declares and references, with the scopes between: the per-file facts deadwood's reachability
+        // and swift-search's resolution read (roadmap 0055), with their protobuf payload.
+        .target(
+            name: "SymbolFacts",
+            dependencies: [
+                "CorpusScan", .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "AemiProtobuf", package: "AemiProtobuf"),
+                .product(name: "AemiProtobufCore", package: "AemiProtobuf"),
+            ],
+            swiftSettings: strictSwiftSettings
+        ),
+        .testTarget(
+            name: "SymbolFactsTests",
+            dependencies: [
+                "SymbolFacts", .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "AemiProtobuf", package: "AemiProtobuf"),
+            ],
             swiftSettings: strictSwiftSettings
         ),
         // A BERT WordPiece tokenizer, so no analyzer links swift-transformers to feed a Core ML bundle.
