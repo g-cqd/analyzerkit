@@ -4,29 +4,21 @@ import Testing
 
 #if canImport(Darwin)
     import Darwin
-#elseif canImport(Glibc)
-    import Glibc
+
+    /// The size of the calling thread's stack. Darwin only: Glibc's `pthread_getattr_np` is a GNU extension Swift's
+    /// Glibc module does not import.
+    private func currentStackSize() -> Int {
+        unsafe pthread_get_stacksize_np(pthread_self())
+    }
 #endif
 
-/// The size of the calling thread's stack.
-private func currentStackSize() -> Int {
-    #if canImport(Darwin)
-        return unsafe pthread_get_stacksize_np(pthread_self())
-    #else
-        var attributes = pthread_attr_t()
-        guard unsafe pthread_getattr_np(pthread_self(), &attributes) == 0 else { return 0 }
-        defer { unsafe pthread_attr_destroy(&attributes) }
-        var size = 0
-        unsafe pthread_attr_getstacksize(&attributes, &size)
-        return size
-    #endif
-}
-
 struct LargeStackTests {
-    @Test func `the work runs on a stack of the size asked for`() async {
-        let size = await LargeStack.run(stackSize: 64 << 20) { currentStackSize() }
-        #expect(size >= 64 << 20, "ran on a stack of \(size) bytes")
-    }
+    #if canImport(Darwin)
+        @Test func `the work runs on a stack of the size asked for`() async {
+            let size = await LargeStack.run(stackSize: 64 << 20) { currentStackSize() }
+            #expect(size >= 64 << 20, "ran on a stack of \(size) bytes")
+        }
+    #endif
 
     @Test func `the result comes back, and many runs can be in flight at once`() async {
         let results = await withTaskGroup(of: Int.self) { group in

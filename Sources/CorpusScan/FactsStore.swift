@@ -230,8 +230,21 @@ enum FactsStore {
         location.root + "/facts/" + hex(XXH64.hash(Array(SourcePath.canonical(location.workspace).utf8)))
     }
 
+    /// `path` without its last component, as `NSString.deletingLastPathComponent` gives it for an absolute path
+    /// (`/a/b.swift` → `/a`, `/b.swift` → `/`), which FoundationEssentials does not have.
+    static func parent(of path: String) -> String {
+        guard let slash = path.lastIndex(of: "/") else { return "" }
+        return slash == path.startIndex ? "/" : String(path[..<slash])
+    }
+
+    /// Whether `path` is a directory, following a link; FoundationEssentials has no `ObjCBool`.
+    static func isDirectory(_ path: String) -> Bool {
+        (try? FileManager.default.attributesOfItem(atPath: SourcePath.canonical(path)))?[.type] as? FileAttributeType
+            == .typeDirectory
+    }
+
     static func shardIndex(of path: String) -> Int {
-        let directory = (path as NSString).deletingLastPathComponent
+        let directory = Self.parent(of: path)
         return Int(XXH64.hash(Array(directory.utf8)) % UInt64(shardCount))
     }
 
@@ -270,8 +283,7 @@ enum FactsStore {
     /// holding nothing but a v1 `facts.json`. Anything else is left alone. Returns why the cache cannot be used, if so.
     static func prepareRoot(_ root: String) -> String? {
         let manager = FileManager.default
-        var isDirectory: ObjCBool = false
-        if unsafe manager.fileExists(atPath: root, isDirectory: &isDirectory), !isDirectory.boolValue {
+        if manager.fileExists(atPath: root), !Self.isDirectory(root) {
             guard isVersionOneCache(root) else {
                 return "the cache path \(root) is a file that is not a cache; it was left alone and no cache was used"
             }
@@ -327,13 +339,24 @@ enum FactsStore {
     /// The bytes of the regular files at or under `path`.
     static func size(of path: String) -> Int {
         let manager = FileManager.default
-        var isDirectory: ObjCBool = false
-        guard unsafe manager.fileExists(atPath: path, isDirectory: &isDirectory) else { return 0 }
-        guard isDirectory.boolValue else { return (try? manager.attributesOfItem(atPath: path))?[.size] as? Int ?? 0 }
+        guard manager.fileExists(atPath: path) else { return 0 }
+        guard Self.isDirectory(path) else { return (try? manager.attributesOfItem(atPath: path))?[.size] as? Int ?? 0 }
+        return regularBytes(under: path)
+    }
+
+    /// The bytes of the regular files under the directory `path`, links not followed. A walk by hand:
+    /// FoundationEssentials has no `subpaths(atPath:)`.
+    private static func regularBytes(under path: String) -> Int {
+        let manager = FileManager.default
         var total = 0
-        for name in manager.subpaths(atPath: path) ?? [] {
-            let attributes = (try? manager.attributesOfItem(atPath: path + "/" + name)) ?? [:]
-            if attributes[.type] as? FileAttributeType == .typeRegular { total += attributes[.size] as? Int ?? 0 }
+        for name in (try? manager.contentsOfDirectory(atPath: path)) ?? [] {
+            let child = path + "/" + name
+            let attributes = (try? manager.attributesOfItem(atPath: child)) ?? [:]
+            switch attributes[.type] as? FileAttributeType {
+            case .typeRegular?: total += attributes[.size] as? Int ?? 0
+            case .typeDirectory?: total += regularBytes(under: child)
+            default: break
+            }
         }
         return total
     }
