@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 blocked-by: []
 date: 2026-10-30
 ---
@@ -18,10 +18,19 @@ byte-equal. If the differences are real requirements, this entry closes with the
 ## Progress
 
 The measurement is done (research 2026-10-31-per-file-symbol-facts-compared). One extraction serves both. deadwood's
-is a superset of swift-search's apart from three things: the name's position, the later components of a member type
+is a superset of swift-search's in what it records apart from three things: the name's position, the later components of a member type
 (2,030 references on maintastic), and macro declarations (6). Time is equal (55.5 s against 54.4 s on maintastic,
 debug, one thread, parsing included), and deadwood's peak memory is 45% higher.
 
-Next: `SymbolFacts` in analyzerkit, deadwood's collectors with those three additions, cached through `CorpusScanner`
-with an AemiProtobuf payload. Then deadwood and swift-search switch, each in an entry of its own, with byte-equal
-reports.
+analyzerkit `8215e78` (red `9eef461`): `SymbolFacts`, deadwood's collectors with the three additions
+(`Declaration.nameLocation`, `Reference.nameLocation` on a member type's later components, `DeclarationKind.macro`)
+and an AemiProtobuf payload whose messages (`SymbolFactsWire`) keep deadwood's field numbers, so its compact
+references read as full ones. 7 tests, one comparing every row with deadwood's on a 43-line fixture.
+
+deadwood `d25590b` (red `eef9c90`) collects through it and drops its copies, the JSON cache coding and AemiJSON from
+its core. It leaves the macro declarations out, as before. Byte-equal to `ce84744`, stderr included: maintastic with
+the Xcode store (56,642 bytes) and without (38,738), and deadwood's own Sources. A warm cache reports as a cold one
+apart from the hit counters. The cache is 1.9% larger (35,820 KB to 36,488 KB on maintastic): the name locations.
+
+swift-search's switch is roadmap 0061: the comparison found more differences than the three above once its output
+was read field by field.

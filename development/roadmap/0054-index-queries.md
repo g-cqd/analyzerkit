@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 blocked-by: []
 date: 2026-10-30
 ---
@@ -39,4 +39,5 @@ four):
 The 10% bar is missed by up to 2 points, and the whole difference is canonicalizing 108,313 paths, which callers
 pay today at 0.24 s more. Kept as is: canonical paths are this entry's point.
 
-Next: arcleak, deadwood and swift-search read through `IndexQueries`, with byte-equal reports.
+arcleak, deadwood (`ce84744`) and swift-search (`db8edad`, local: the repository has no remote) read through
+`IndexQueries`. deadwood on maintastic with the Xcode store is byte-equal, stderr included.
