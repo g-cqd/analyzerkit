@@ -189,6 +189,7 @@ let package = Package(
             dependencies: [
                 "ProjectModel",
                 .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "SwiftIfConfig", package: "swift-syntax"),
             ],
             swiftSettings: strictSwiftSettings
         ),
