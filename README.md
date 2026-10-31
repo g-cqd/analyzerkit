@@ -126,7 +126,7 @@ deadwood's collectors, moved here (roadmap 0055). Fold the tree's operators firs
 ## Use
 
 ```swift
-.package(url: "https://github.com/g-cqd/analyzerkit.git", from: "0.1.0")
+.package(url: "https://github.com/g-cqd/analyzerkit.git", from: "0.4.0")
 ```
 
 ```swift
