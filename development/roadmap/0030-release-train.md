@@ -63,3 +63,17 @@ Wave 1, 2026-10-31:
 
   The full hashes are in aemi's `Scripts/analyzers.lock`. The consumers are on this set (0031). There were no pull
   requests: the owner asked for direct commits to `main`.
+- **Wave 2 shipped.** The tag `analyzerkit-wave-2` is at `0a13bbf`: IndexQueries' name scan (0054) and SymbolFacts
+  (0055). arcleak and deadwood read the index through `IndexQueries`, and deadwood collects with `SymbolFacts`, byte-equal
+  on maintastic. dolly, fcheck and modeler only move to the shared revision (ADR-0025). Each tool's suite passed
+  locally before its tag. CI was not awaited, at the owner's request. Every tag's run then passed and published.
+
+  | tool | tag | commit | macOS arm64 SHA-256 | Linux x86_64 SHA-256 |
+  |---|---|---|---|---|
+  | arcleak | v0.14.0 | `dac733f` | `ae10f9a2…` | `8322167a…` |
+  | deadwood | v0.13.0 | `ece2a67` | `93aaf921…` | `e964ef5e…` |
+  | dolly | v0.13.0 | `a37d45a` | `16ba43c5…` | `70943a58…` |
+  | fcheck | v0.3.0 | `dc96dc8` | `000884a7…` | `c212eb33…` |
+  | modeler | v0.3.0 | `7993d95` | `d3076ae5…` | `6355e848…` |
+
+  The full hashes are in aemi's `Scripts/analyzers.lock` (`1580771`). Wave 3 drops the old flag spellings.
