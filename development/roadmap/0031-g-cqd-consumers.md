@@ -65,3 +65,11 @@ Wave 1, 2026-10-31. Every consumer is on the wave-1 set:
   the new releases and passed with the same baselines. AemiJSON's and AemiProtobuf's CI were already red before either
   wave (a NaN coding path and a Linux release build in AemiJSON, and `setup-swift`'s gpg step on AemiProtobuf's Linux job). Their
   analyzer jobs pass.
+- **maintastic on wave 2** (MAIN-24613 on its current branch, local commits `793c0ae3fc`, `571b8dee01` and `f8dc637712`, not
+  pushed): `ShareXcodePlugins` pins arcleak 0.14.0, dolly 0.13.0 and deadwood 0.13.0, up from 0.12.0, 0.11.0 and 0.11.1. All three keep their cache
+  in `<tool>/cache`, because 0.13 and 0.14 leave alone the `facts` file that the old versions wrote and then run without a cache.
+  deadwood gets its cache back: the 64 MiB limit is gone, and it runs in 4 s instead of 10 on an unchanged repository. `.arcleak.json` drops the excludes
+  that only kept 0.12.0's index for the whole run, since arcleak now checks the index file by file. Measured on maintastic with its Xcode
+  store: arcleak and dolly report the same findings; deadwood reports 36 fewer, all of them false positives under 0.11.1 (e.g.
+  `ShareFonts.bodySmall`, which is used); a warm run equals a cold one. DangerPlugins' 153 tests pass.
+- analyzerkit **0.4.0** is tagged at `805c89b`, which has wave 2's sources. Its release page needs a token with the `workflow` scope.
