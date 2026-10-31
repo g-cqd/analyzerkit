@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-30
 ---
@@ -18,3 +18,16 @@ configuration, it moves to analyzerkit, with an ADR naming arcleak and the tools
 Red: a function leaking a handle inside `#if FEATURE` is reported without `--define`, and with `--define FEATURE`; it is
 not reported with `--define OTHER` when an `#else` holds the closing version. Statement-level `#if` inside a function
 body follows the same rule.
+
+## Done
+
+ADR-0029. The code that stays keeps every line and column.
+
+- **analyzerkit** `7cbac6c` (red `7f8053c`): `ProjectModel.CompilationConditions`. It holds arcleak's
+  build-configuration recipe and `activeSource(_:tree:)`, which blanks the inactive clauses' elements in place.
+- **fcheck** `283a8ae`, `4e91495` (red `616d638`) and **modeler** `ba91fce` (red `9d06f67`):
+  - With `--define` or `defines`, the file is parsed again from its active source.
+  - `defines` and `platforms` are read and go into the cache salt (when set, so other salts do not move).
+  - The "no effect" note is gone.
+  - Without a define nothing changes.
+- **arcleak** `3842b0f` builds its configuration through `CompilationConditions`.
