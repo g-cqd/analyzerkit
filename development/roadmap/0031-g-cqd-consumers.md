@@ -73,3 +73,9 @@ Wave 1, 2026-10-31. Every consumer is on the wave-1 set:
   store: arcleak and dolly report the same findings; deadwood reports 36 fewer, all of them false positives under 0.11.1 (e.g.
   `Fonts.bodySmall`, which is used); a warm run equals a cold one. CIPlugins' 153 tests pass.
 - analyzerkit **0.4.0** is tagged at `2493229`, which has wave 2's sources. Its release page needs a token with the `workflow` scope.
+- **arcleak 0.15.0, fcheck 0.4.0, modeler 0.4.0:** aemi `b3101fe` (the lock; swift-quality's arcleak default). The
+  bootstraps' `AEMI=` and the swift-quality references moved: AemiJSON `55015cf`, AemiRegex `045e7fa`, AemiMarkdown
+  `696f33c`, ask `3a684a5`, Atelier `8243cc5`. AemiProtobuf `tools.lock` is at `64de550`, and Atelier's GitDiffViewer helper at
+  arcleak `daff058` (`1e4ae04`; that commit was built in release from a clean export). Every gate ran locally on the new
+  releases with unchanged results. the reference app: arcleak 0.15.0 on a pull request (`<commit>`), whose Danger run reports
+  `Camera.getCurrentFrameInHD()` as a new warning.
