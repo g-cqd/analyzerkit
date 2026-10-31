@@ -38,6 +38,11 @@ While trying a resource in fcheck's configuration, the README's own `.fcheck.jso
 Neither is released. Still reported on purpose: `TicketTaskTimeTrackingSessionListViewModel.editSession(_:)`, where the
 `isEditing` claim blocks a second `editSession` but not `deleteCurrentSession()`, which writes `editableSession` too.
 
-Not addressed: modeler's TLA+ model has no precondition for a guard on a computed property (`state.isRecording ||
-state.isPaused`), so TLC's first trace on `RecordingCoordinator` started `finalize()` from `.idle`, which the code
-refuses. Resolving an enum's Boolean computed properties to their cases would remove that.
+The TLA+ gap, done after: modeler red `54b056d`, green `2f67080` (an enum records its Boolean computed properties
+over its cases; a guard on `member.isX` resolves to those cases once every file is read, and narrows nothing when it
+does not resolve); red `d1fb03c`, green `286134a` (a `switch` whose other cases leave narrows the member after it; a
+`break` leaves only the switch); red `ef2d36a`, green `6cbf28c` (a claimed finding's monitor starts from the value the
+claim wrote). TLC on `RecordingCoordinator` went from traces that start where the code refuses to a real one:
+`start()` claims `.preparing`, `handleMediaServicesReset()` sets `.idle`, `start()` overwrites it.
+
+Released in modeler 0.4.0 (`1b3993e`) and fcheck 0.4.0 (`03acac1`).

@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-31
 ---
@@ -27,3 +27,15 @@ in a callback.
 
 Acceptance: a red test per shape and for the hand-on above; maintastic reports `CaptureActor` and nothing for the sites
 that use `defer`; fcheck stays clean on the family's repositories.
+
+## Done
+
+fcheck red `3802166`, green `c3d6b3e`. A resource's `holds` is `result` (as before), `receiver` or `firstArgument`;
+the capture-session configuration, the capture-device configuration lock and the pixel-buffer base-address lock are
+built in. A pair is ended only by its release. It is followed only when its opening call is a statement of its own,
+since code that checks a `CVReturn` handles a failure the rule cannot tie to the release, and only when the receiver is
+a simple name (`self.` dropped). Two shapes from maintastic were false positives in a first version and are tests
+now: a checked `let status = CVPixelBufferLockBaseAddress(…)`, and a force-unwrapped argument (`pixelBuffer!`) that was
+not matched at its unlock. On maintastic: `CaptureActor.configureSessionIfNeeded()` and nothing else new (16 such
+sites); the family's repositories are unchanged. Released in fcheck 0.4.0. `lock()`/`unlock()` is not built in: a lock
+taken in one method and released in another is sometimes intended; `resources` can add it.

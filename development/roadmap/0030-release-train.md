@@ -77,3 +77,11 @@ Wave 1, 2026-10-31:
   | modeler | v0.3.0 | `7993d95` | `d3076ae5…` | `6355e848…` |
 
   The full hashes are in aemi's `Scripts/analyzers.lock` (`1580771`). Wave 3 drops the old flag spellings.
+- **After wave 2, on analyzerkit `0a13bbf`:** rules found by running fcheck and modeler on maintastic (roadmap 0062 to
+  0066). Each suite passed locally before its tag, and each tag's run passed and published.
+
+  | tool | tag | commit | macOS arm64 SHA-256 | Linux x86_64 SHA-256 |
+  |---|---|---|---|---|
+  | arcleak | v0.15.0 | `403e421` | `1b7186d9…` | `9680abe8…` |
+  | fcheck | v0.4.0 | `03acac1` | `ce39ff6b…` | `17b40071…` |
+  | modeler | v0.4.0 | `1b3993e` | `f59cadb9…` | `458d66a4…` |

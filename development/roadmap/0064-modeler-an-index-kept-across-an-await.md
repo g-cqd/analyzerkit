@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-31
 ---
@@ -20,3 +20,9 @@ error: it can crash. The message says to look the index up again by identity aft
 Acceptance: red tests for the guard-let and the force-unwrap forms, a rebinding that clears it, a use of the index on
 another collection that does not; maintastic reports `refreshMessage(with:)` under the new rule, and the `reentrancy`
 finding on that line is not reported twice.
+
+## Done
+
+modeler red `3c3982b`, green `6c6f31c`. Effects `bindIndex` and `useIndex`; an error by default. On maintastic,
+`ChatMessageListViewModel.refreshMessage(with:)` moves from `reentrancy` to `stale-index`, and nothing else changes; the
+family's repositories are unchanged. Released in modeler 0.4.0.

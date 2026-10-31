@@ -1,5 +1,5 @@
 ---
-status: not-started
+status: done
 blocked-by: []
 date: 2026-10-31
 ---
@@ -13,3 +13,9 @@ behind a `?? ""`. And `s.utf16.prefix(n)` decoded back splits a surrogate pair. 
 
 Acceptance: red tests for the two optional initializers and the UTF-16 cut, each with its witness line; the family's
 repositories stay clean.
+
+## Done
+
+fcheck red `76fe318`, green `ffc462d`: `String(data:encoding: .utf8)`, `String(bytes:encoding: .utf8)` and
+`String(<cut utf8 or utf16 view>)`, with a message saying the whole text is lost. maintastic and the family's
+repositories: unchanged. Released in fcheck 0.4.0.

@@ -73,3 +73,9 @@ Wave 1, 2026-10-31. Every consumer is on the wave-1 set:
   store: arcleak and dolly report the same findings; deadwood reports 36 fewer, all of them false positives under 0.11.1 (e.g.
   `ShareFonts.bodySmall`, which is used); a warm run equals a cold one. DangerPlugins' 153 tests pass.
 - analyzerkit **0.4.0** is tagged at `805c89b`, which has wave 2's sources. Its release page needs a token with the `workflow` scope.
+- **arcleak 0.15.0, fcheck 0.4.0, modeler 0.4.0:** aemi `d1b496e` (the lock; swift-quality's arcleak default). The
+  bootstraps' `AEMI=` and the swift-quality references moved: AemiJSON `eaccfb9`, AemiRegex `5366ebb`, AemiMarkdown
+  `dc878fd`, ask `3a684a5`, Atelier `8243cc5`. AemiProtobuf `tools.lock` is at `b508578`, and Atelier's GitDiffViewer helper at
+  arcleak `403e421` (`1e4ae04`; that commit was built in release from a clean export). Every gate ran locally on the new
+  releases with unchanged results. maintastic: arcleak 0.15.0 on PR #1805 (`07a2e6476e`), whose Danger run reports
+  `Camera.getCurrentFrameInHD()` as a new warning.
