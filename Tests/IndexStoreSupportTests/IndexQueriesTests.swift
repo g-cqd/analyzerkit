@@ -88,6 +88,14 @@
             }
         }
 
+        @Test func `a predicate over every name finds what a regex search needs`() async throws {
+            try await fixture { queries, store, _ in
+                let found = queries.occurrences(whereName: { $0.hasSuffix("All()") })
+                #expect(Set(found.map(\.name)) == ["fetchAll()"])
+                #expect(found.allSatisfy { $0.file == store || $0.file == SourcePath.canonical($0.file) })
+            }
+        }
+
         @Test func `a file's definitions, with canonical paths`() async throws {
             try await fixture { queries, store, _ in
                 let names = queries.definitions(inFile: store).map(\.name)
