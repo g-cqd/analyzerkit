@@ -48,8 +48,22 @@ import Testing
         let pid = try #require(
             Int32(String(contentsOfFile: marker, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
         try await Task.sleep(for: .milliseconds(200))
-        #expect(kill(pid, 0) != 0, "the grandchild \(pid) is still running")
+        #expect(!Self.isRunning(pid), "the grandchild \(pid) is still running")
         kill(pid, SIGKILL)
+    }
+
+    /// Whether `pid` runs. A killed process whose parent has gone is a zombie until an init reaps it, and a CI container
+    /// without one never does; `kill(pid, 0)` still finds a zombie, so on Linux its state in `/proc` decides.
+    private static func isRunning(_ pid: Int32) -> Bool {
+        guard kill(pid, 0) == 0 else { return false }
+        #if os(Linux)
+            guard let stat = try? String(contentsOfFile: "/proc/\(pid)/stat", encoding: .utf8),
+                let close = stat.lastIndex(of: ")")
+            else { return false }
+            return stat[stat.index(after: close)...].trimmingCharacters(in: .whitespaces).first != "Z"
+        #else
+            return true
+        #endif
     }
 
     /// A megabyte through a pipe whose reader keeps only 4 KiB: the child must still finish, not block on a full pipe.
