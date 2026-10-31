@@ -113,6 +113,16 @@ bundle. Pure Swift; the analyzers' parity tests compare it with swift-transforme
 
 Closures and nested functions are steps of the function that contains them, not entered.
 
+## Library: `SymbolFacts`
+
+| API | Answers |
+| --- | --- |
+| `FileSymbolFacts.collect` | what one file declares (locals and parameters too, macros included) and references, with the context of each reference, and the lexical scopes between; the string-literal and comment tokens a dynamic reference may hide in |
+| `Declaration.nameLocation`, `Reference.nameLocation` | where the name is when the node starts elsewhere: after a declaration's attributes, the last component of `Outer.Inner` |
+| `FileSymbolFacts` as AemiProtobuf, `SymbolFactsWire` | the facts as a cache payload, and each message for a payload that embeds them |
+
+deadwood's collectors, moved here (roadmap 0055). Fold the tree's operators first for an assignment to read as a write.
+
 ## Use
 
 ```swift
