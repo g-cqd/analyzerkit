@@ -27,6 +27,7 @@ let package = Package(
         .library(name: "CorpusScan", targets: ["CorpusScan"]),
         .library(name: "ReportSupport", targets: ["ReportSupport"]),
         .library(name: "WordPiece", targets: ["WordPiece"]),
+        .library(name: "SemanticEmbedding", targets: ["SemanticEmbedding"]),
         .library(name: "ControlFlow", targets: ["ControlFlow"]),
         .library(name: "SymbolFacts", targets: ["SymbolFacts"]),
     ],
@@ -205,6 +206,15 @@ let package = Package(
         ),
         // A BERT WordPiece tokenizer, so no analyzer links swift-transformers to feed a Core ML bundle.
         .target(name: "WordPiece", swiftSettings: strictSwiftSettings),
+        // The embedding providers arcleak, deadwood and dolly each carried (roadmap 0028): the protocol, the
+        // deterministic oracle, Apple's NLContextualEmbedding and a Core ML bundle behind WordPiece. The Apple halves sit
+        // behind `canImport`, so the module is the protocol, the oracle and the bundle search elsewhere.
+        .target(name: "SemanticEmbedding", dependencies: ["WordPiece"], swiftSettings: strictSwiftSettings),
+        .testTarget(
+            name: "SemanticEmbeddingTests",
+            dependencies: ["SemanticEmbedding"],
+            swiftSettings: strictSwiftSettings
+        ),
         .testTarget(
             name: "ReportSupportTests",
             dependencies: ["ReportSupport", "ProjectModel"],
