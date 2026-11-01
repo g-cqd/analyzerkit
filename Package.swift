@@ -91,8 +91,10 @@ let package = Package(
         .target(
             name: "Suppression",
             dependencies: [
-                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                "CorpusScan", .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "AemiKernels", package: "aemi"),
+                .product(name: "AemiProtobuf", package: "AemiProtobuf"),
+                .product(name: "AemiProtobufCore", package: "AemiProtobuf"),
             ],
             swiftSettings: strictSwiftSettings
         ),
