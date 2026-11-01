@@ -1,8 +1,10 @@
-public enum DirectiveKind: Sendable, Equatable {
+/// What a directive does. The raw value is the name in the cache payload (field 2): never rename a case.
+public enum DirectiveKind: String, Sendable, Equatable, Codable, CaseIterable {
     case acceptThis, acceptNext, accept, regionDisable, regionEnable
 }
 
-/// A rule-independent directive model. Encoding remains the consuming tool's wire/cache contract.
+/// A rule-independent directive model, and the form the tools cache: `Codable` (the JSON fallback) and, where the rule
+/// is a string-raw enumeration, fast protobuf (``Directive/__aepbEncode(into:)``).
 public struct Directive<Rule: Hashable & Sendable>: Sendable, Equatable {
     /// Empty means every rule; order and duplicates retained for clients whose wire format uses an array.
     public let rules: [Rule]
@@ -17,6 +19,8 @@ public struct Directive<Rule: Hashable & Sendable>: Sendable, Equatable {
     }
     public func covers(_ rule: Rule) -> Bool { rules.isEmpty || rules.contains(rule) }
 }
+
+extension Directive: Codable where Rule: Codable {}
 
 /// A stable line-order sweep. Regions are state switches, not nested stacks; line directives win over regions.
 public struct SuppressionTable<Rule: Hashable & Sendable>: Sendable {
