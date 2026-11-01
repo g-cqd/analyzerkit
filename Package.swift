@@ -99,7 +99,9 @@ let package = Package(
         .testTarget(
             name: "SuppressionTests",
             dependencies: [
-                "Suppression", .product(name: "SwiftParser", package: "swift-syntax"),
+                "Suppression", "CorpusScan", .product(name: "SwiftParser", package: "swift-syntax"),
+                .product(name: "AemiProtobuf", package: "AemiProtobuf"),
+                .product(name: "AemiProtobufCore", package: "AemiProtobuf"),
             ],
             swiftSettings: strictSwiftSettings
         ),
