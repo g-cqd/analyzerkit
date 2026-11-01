@@ -117,3 +117,21 @@ Wave 1, 2026-10-31:
   | modeler | v0.4.2 | `901a3e9` |
 
   Before this, on the same day: arcleak 0.16.0 (`cac8645`), fcheck 0.4.2 (`c8599aa`), deadwood 0.14.1 (`72a1213`, not published).
+- **2026-11-01, the promotion train (0067 steps 1 to 4), on analyzerkit `45f5093`.** Shared: wire mirrors, `SemanticEmbedding`
+  (0028), `ToolReport` and `ToolReportFormat`. Cache bytes are unchanged. The JSON fallback shape of a cached suppression
+  directive changed (analyzerkit's `Directive` coding). The fallback texts of the embedding providers were unified, and a run's
+  skipped files are counted by unique path. See each tool's `release-notes/`.
+
+  | tool | tag | commit |
+  |---|---|---|
+  | arcleak | v0.17.0 | `4c400b8` |
+  | deadwood | v0.15.0 | `930bd0a` |
+  | dolly | v0.14.0 | `a8529a3` |
+  | fcheck | v0.4.4 | `7f113b0` |
+  | modeler | v0.4.3 | `8435872` |
+
+  The family's heads were unchanged since the last release (aemi `8087a01`, AemiJSON `60b3a5c`, AemiRegex `2cccb99`,
+  AemiProtobuf `7b96250`), so the re-pin to them is in. Each suite and `Scripts/lint-format.sh` passed locally before its tag;
+  CI was not awaited. All five packages and their tests **build** on arm64 Linux in `swift:6.4.1-noble`
+  (`--disable-index-store`); the tests were **not run** there (SwiftPM's test run failed in the container for reasons of its own,
+  twice, so it was not pursued). Dolly and modeler are built on Linux for the first time.

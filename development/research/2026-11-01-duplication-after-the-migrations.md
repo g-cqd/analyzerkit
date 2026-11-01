@@ -101,6 +101,14 @@ roadmap entry once step 4 has fixed the finding protocol; configuration last.
 Each step is the same train as 0030: land the shared piece with its own tests, migrate the tools with byte-equal
 reports, run each suite, then tag.
 
+## What happened to the plan
+
+Steps 1 to 4 were carried out the same day (roadmap 0067 has the commits). Two parts were decided to stay per tool after
+reading the code: `PathPresentation` (the shared rule was already `PathPresenter`; the per-field choices differ on purpose) and
+`AnalysisReport` (its extra fields differ; `ToolReport` is the surface the renderers need). The byte-equal check was run on the
+fixtures and on the other tools' `Sources` for the embeddings and the report layer, not on the reference app. Step 5 is split into 0068
+(facts coding), 0069 (run skeleton) and 0070 (configuration).
+
 ## Not verified
 
 - The clone tokens are dolly's, from a debug build; no second tool confirmed them.
