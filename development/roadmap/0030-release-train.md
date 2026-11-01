@@ -99,3 +99,21 @@ Wave 1, 2026-10-31:
   | dolly | v0.13.1 | `7378056` |
   | fcheck | v0.4.1 | `57f9e00` |
   | modeler | v0.4.1 | `73662f8` |
+- **2026-11-01, a second dependency release, on analyzerkit `2e63fd3`.** The family's heads at 17:00: aemi `a4e7edc` (ADR 0024: AemiArgon2,
+  CAemiCPU, an Embedded AemiKernel), AemiRegex `b4a058f`, AemiJSON `f03e42f`, AemiProtobuf `9af5a96` (re-pinned to them first). arcleak
+  0.16.1, deadwood 0.14.2, dolly 0.13.2, fcheck 0.4.3 and modeler 0.4.2 are pins only, except deadwood: its tags v0.14.0 and v0.14.1
+  never published (the Linux build did not compile, a branch of `Analyzer.indexAwareUnused` returned a pair for a triple), so 0.14.2 is
+  the first 0.14 and its note is the sum. Built and tested in `swift:6.4.1-noble` before the tags: deadwood, arcleak and fcheck;
+  dolly and modeler were not (the container hung). On arm64 Linux, SwiftPM's own test discovery crashes in libIndexStore ("corrupted
+  double-linked list"); `--disable-index-store` avoids it. aemi moved again at 17:59 (`8087a01`, AemiArgon2 only) while this ran, so the
+  tools are one aemi commit behind; Atelier is on it.
+
+  | tool | tag | commit |
+  |---|---|---|
+  | arcleak | v0.16.1 | `36a20ef` |
+  | deadwood | v0.14.2 | `c2dc872` |
+  | dolly | v0.13.2 | `edce425` |
+  | fcheck | v0.4.3 | `4211a0e` |
+  | modeler | v0.4.2 | `901a3e9` |
+
+  Before this, on the same day: arcleak 0.16.0 (`cac8645`), fcheck 0.4.2 (`c8599aa`), deadwood 0.14.1 (`72a1213`, not published).
