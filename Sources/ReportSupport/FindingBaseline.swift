@@ -12,7 +12,7 @@ internal import ProjectModel
 /// Fingerprints include line and column, so an unrelated edit above a finding moves it out of the baseline;
 /// regenerate with `--write-baseline` after big moves. That is the deliberate trade against fuzzy matching, which
 /// would swallow new bugs. The file is a ``BaselineFile`` with `version: 1`.
-public struct Baseline<Finding: Fingerprinted>: Sendable, Equatable {
+public struct FindingBaseline<Finding: Fingerprinted>: Sendable, Equatable {
     /// Why a baseline file was refused. The description is what the analyzers print after the path.
     public struct LoadFailure: Error, Equatable, Sendable, CustomStringConvertible {
         public let description: String

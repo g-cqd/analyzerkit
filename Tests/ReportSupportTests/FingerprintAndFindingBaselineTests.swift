@@ -36,27 +36,29 @@ private struct Probe: Fingerprinted, Equatable {
     }
 }
 
-@Suite struct BaselineTests {
+@Suite struct FindingBaselineTests {
     @Test func `a baseline keeps what it contains and sets the rest apart`() {
         let known = Probe(identity: "a"), fresh = Probe(identity: "b")
-        let baseline = Baseline<Probe>(findings: [known])
+        let baseline = FindingBaseline<Probe>(findings: [known])
         let (kept, baselined) = baseline.filter([known, fresh])
         #expect(kept == [fresh] && baselined == [known])
         #expect(baseline.contains(known) && !baseline.contains(fresh))
     }
 
     @Test func `the file is sorted, unique, versioned, and read back to the same set`() throws {
-        let baseline = Baseline<Probe>(fingerprints: ["b", "a", "b"])
+        let baseline = FindingBaseline<Probe>(fingerprints: ["b", "a", "b"])
         let data = try baseline.encoded(tool: "t")
         let text = String(decoding: data, as: UTF8.self)
         #expect(text.contains("\"version\" : 1") && text.contains("\"tool\" : \"t\""))
-        #expect(try Baseline<Probe>(decoding: data) == baseline)
+        #expect(try FindingBaseline<Probe>(decoding: data) == baseline)
     }
 
     @Test func `a file without a version, with another version, or that is not a baseline is refused with its reason`()
     {
         func failure(_ json: String) -> String? {
-            do { _ = try Baseline<Probe>(decoding: Data(json.utf8)); return nil } catch { return error.description }
+            do { _ = try FindingBaseline<Probe>(decoding: Data(json.utf8)); return nil } catch {
+                return error.description
+            }
         }
         #expect(failure(#"{"fingerprints":[],"tool":"t"}"#) == "the baseline has no version")
         #expect(failure(#"{"fingerprints":[],"tool":"t","version":2}"#) == "unsupported baseline version 2")
