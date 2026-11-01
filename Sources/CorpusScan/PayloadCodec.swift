@@ -15,7 +15,8 @@ extension PayloadCodec where Facts: Codable {
     static var json: Self {
         Self(
             encode: { try? AemiJSON.JSONEncoder().encodeToBytes($0) },
-            decode: { try? AemiJSON.JSONDecoder().decode(Facts.self, from: $0) })
+            decode: { try? AemiJSON.JSONDecoder().decode(Facts.self, from: $0) }
+        )
     }
 }
 
@@ -24,6 +25,7 @@ extension PayloadCodec where Facts: AemiProtoFastEncodable & AemiProtoFastDecoda
     static var protobuf: Self {
         Self(
             encode: { try? ProtobufEncoder().encodeToBytes($0) },
-            decode: { try? ProtobufDecoder().decode(Facts.self, fromBytes: $0) })
+            decode: { try? ProtobufDecoder().decode(Facts.self, fromBytes: $0) }
+        )
     }
 }

@@ -17,7 +17,9 @@ import Testing
         func file(_ name: String, _ content: String = "") throws {
             let url = URL(fileURLWithPath: root + "/" + name)
             try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try content.write(to: url, atomically: true, encoding: .utf8)
         }
         func store(_ name: String, workspace: String?, accessed: TimeInterval = 0) throws -> String {
@@ -27,7 +29,9 @@ import Testing
                     fromPropertyList: [
                         "WorkspacePath": workspace, "LastAccessedDate": Date(timeIntervalSince1970: accessed),
                     ],
-                    format: .binary, options: 0)
+                    format: .binary,
+                    options: 0
+                )
                 try data.write(to: URL(fileURLWithPath: root + "/" + name + "/info.plist"))
             }
             return root + "/" + name + "/Index.noindex/DataStore"
@@ -43,18 +47,23 @@ import Testing
             for index in 0..<30 { try f.file("Directory\(index)/File.swift") }
             #expect(
                 ProjectLayout.markers(in: f.root)
-                    == .init(hasContainer: false, hasPackage: true, directoriesOpened: 1, statCalls: 0))
+                    == .init(hasContainer: false, hasPackage: true, directoriesOpened: 1, statCalls: 0)
+            )
             try f.file("Real/App.xcodeproj/project.pbxproj")
             // A link named like a container never counted (the check never followed a final link), and is not stat'ed.
             try FileManager.default.createSymbolicLink(
-                atPath: f.root + "/Linked.xcodeproj", withDestinationPath: "Real/App.xcodeproj")
+                atPath: f.root + "/Linked.xcodeproj",
+                withDestinationPath: "Real/App.xcodeproj"
+            )
             #expect(
                 ProjectLayout.markers(in: f.root)
-                    == .init(hasContainer: false, hasPackage: true, directoriesOpened: 1, statCalls: 0))
+                    == .init(hasContainer: false, hasPackage: true, directoriesOpened: 1, statCalls: 0)
+            )
             try f.file("Real/Package.swift")
             #expect(
                 ProjectLayout.markers(in: f.root + "/Real")
-                    == .init(hasContainer: true, hasPackage: true, directoriesOpened: 1, statCalls: 0))
+                    == .init(hasContainer: true, hasPackage: true, directoriesOpened: 1, statCalls: 0)
+            )
         }
     }
 
@@ -105,7 +114,8 @@ import Testing
             let loose = try #require(
                 ProjectLayout.discover(paths: [
                     f.root + "/Loose/A/One.swift", f.root + "/Loose/B/Two.swift",
-                ]))
+                ])
+            )
             #expect(loose.root == f.root + "/Loose")
             #expect(loose.repositoryRoot == nil)
             #expect(ProjectLayout.discover(paths: []) == nil)
@@ -152,7 +162,10 @@ import Testing
             let data = try PropertyListSerialization.data(
                 fromPropertyList: [
                     "WorkspacePath": layout.containers[0], "Padding": String(repeating: "x", count: 1 << 20),
-                ], format: .binary, options: 0)
+                ],
+                format: .binary,
+                options: 0
+            )
             try data.write(to: URL(fileURLWithPath: f.root + "/DD/App-large/info.plist"))
             #expect(layout.derivedDataStores(under: [f.root + "/DD"]).isEmpty)
         }
@@ -171,11 +184,15 @@ import Testing
                 let data = try PropertyListSerialization.data(
                     fromPropertyList: [
                         "WorkspacePath": f.root + "/Link/App.xcodeproj"
-                    ], format: .xml, options: 0)
+                    ],
+                    format: .xml,
+                    options: 0
+                )
                 try data.write(to: URL(fileURLWithPath: f.root + "/DD/" + name + "/info.plist"))
                 try FileManager.default.setAttributes(
                     [.modificationDate: Date(timeIntervalSince1970: date)],
-                    ofItemAtPath: f.root + "/DD/" + name)
+                    ofItemAtPath: f.root + "/DD/" + name
+                )
             }
             #expect(layout.derivedDataStores(under: [f.root + "/DD"]) == expected)
         }

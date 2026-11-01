@@ -29,14 +29,17 @@ public struct IndexCoverage: Sendable, Equatable {
     /// Classifies `files` by the date of each one's latest unit (nil: none) against its modification time (nil:
     /// unreadable).
     public static func classify(
-        _ files: [String], unitDate: (String) -> Date?, modificationDate: (String) -> Date?
+        _ files: [String],
+        unitDate: (String) -> Date?,
+        modificationDate: (String) -> Date?
     ) -> IndexCoverage {
         IndexCoverage(
             files: files.map { file in
                 guard let unit = unitDate(file) else { return (file, .notIndexed) }
                 guard let modified = modificationDate(file) else { return (file, .unreadable) }
                 return (file, modified > unit ? .changedSinceBuild : .indexed)
-            })
+            }
+        )
     }
 
     /// The files of one class, in order.
@@ -63,7 +66,8 @@ public struct IndexCoverage: Sendable, Equatable {
         guard isUsable else {
             return [
                 RunNote(
-                    code: "index-not-used", severity: "warning",
+                    code: "index-not-used",
+                    severity: "warning",
                     message: "the index store at \(store) describes none of the \(files.count) analyzed files (a wrong "
                         + "path, another build or scheme, or a store with relative unit paths); the analysis ran without it"
                 )
@@ -74,25 +78,40 @@ public struct IndexCoverage: Sendable, Equatable {
         if !changed.isEmpty {
             notes.append(
                 RunNote(
-                    code: "index-changed-since-build", severity: "note",
+                    code: "index-changed-since-build",
+                    severity: "note",
                     message: "\(changed.count) analyzed file(s) changed after the index store was built; their index "
-                        + "facts are not used; rebuild to cover them", paths: changed, verbose: verbose))
+                        + "facts are not used; rebuild to cover them",
+                    paths: changed,
+                    verbose: verbose
+                )
+            )
         }
         let missing = paths(.notIndexed)
         if !missing.isEmpty {
             notes.append(
                 RunNote(
-                    code: "index-not-indexed", severity: "note",
+                    code: "index-not-indexed",
+                    severity: "note",
                     message: "\(missing.count) analyzed file(s) have no unit in the index store (not built by this "
-                        + "scheme, or not built yet); their index facts are missing", paths: missing, verbose: verbose))
+                        + "scheme, or not built yet); their index facts are missing",
+                    paths: missing,
+                    verbose: verbose
+                )
+            )
         }
         let unreadable = paths(.unreadable)
         if !unreadable.isEmpty {
             notes.append(
                 RunNote(
-                    code: "index-unreadable", severity: "warning",
+                    code: "index-unreadable",
+                    severity: "warning",
                     message: "the modification time of \(unreadable.count) analyzed file(s) could not be read; their "
-                        + "index facts are not used", paths: unreadable, verbose: verbose))
+                        + "index facts are not used",
+                    paths: unreadable,
+                    verbose: verbose
+                )
+            )
         }
         return notes
     }

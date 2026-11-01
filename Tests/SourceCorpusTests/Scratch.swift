@@ -30,7 +30,9 @@ struct Scratch {
 
     func link(_ path: String, to destination: String) throws {
         try FileManager.default.createSymbolicLink(
-            atPath: root.appending(path: path).path, withDestinationPath: destination)
+            atPath: root.appending(path: path).path,
+            withDestinationPath: destination
+        )
     }
 
     func path(_ component: String) -> String { root.appending(path: component).path }

@@ -25,7 +25,10 @@ struct Harness {
     }
 
     func scan(
-        _ paths: [String], cache: CacheLocation? = nil, salt: String = "", extractions: Counter? = nil
+        _ paths: [String],
+        cache: CacheLocation? = nil,
+        salt: String = "",
+        extractions: Counter? = nil
     ) async throws -> CorpusScan<SampleFacts> {
         try await CorpusScanner.scan(paths: paths, cache: cache, identity: identity, salt: salt) { _, bytes in
             extractions?.increment()
@@ -71,7 +74,9 @@ struct Harness {
             let a = try scratch.write("dir/A.swift")
             let extractions = Counter()
             let result = try await Harness(scratch: scratch).scan(
-                [a, scratch.path("dir/./A.swift")], extractions: extractions)
+                [a, scratch.path("dir/./A.swift")],
+                extractions: extractions
+            )
             #expect(result.files.count == 1)
             #expect(extractions.value == 1)
         }
@@ -122,7 +127,8 @@ struct Harness {
             let h = Harness(scratch: scratch)
             let file = try h.settled("A.swift", "aaaa")
             let modified = try #require(
-                try FileManager.default.attributesOfItem(atPath: file)[.modificationDate] as? Date)
+                try FileManager.default.attributesOfItem(atPath: file)[.modificationDate] as? Date
+            )
             _ = try await h.scan([file], cache: h.location())
             try scratch.write("A.swift", "bbbb")
             try FileManager.default.setAttributes([.modificationDate: modified], ofItemAtPath: file)
@@ -219,7 +225,8 @@ struct Harness {
             _ = try await h.scan(paths, cache: h.location())
             for shard in h.shards().keys {
                 try Data([0x0A, 0xFF, 0xFF, 0xFF, 0x7F, 1, 2, 3]).write(
-                    to: URL(fileURLWithPath: scratch.path("cache/" + shard)))
+                    to: URL(fileURLWithPath: scratch.path("cache/" + shard))
+                )
             }
             let first = try await h.scan(paths, cache: h.location())
             #expect(first.cacheHits == 0)
@@ -340,14 +347,17 @@ struct Harness {
         #if os(macOS)
             #expect(
                 CacheLocation.defaultRoot(tool: "deadwood", environment: [:], home: "/Users/x")
-                    == "/Users/x/Library/Caches/deadwood")
+                    == "/Users/x/Library/Caches/deadwood"
+            )
         #else
             #expect(
                 CacheLocation.defaultRoot(tool: "deadwood", environment: [:], home: "/home/x")
-                    == "/home/x/.cache/deadwood")
+                    == "/home/x/.cache/deadwood"
+            )
             #expect(
                 CacheLocation.defaultRoot(tool: "deadwood", environment: ["XDG_CACHE_HOME": "/xdg"], home: "/home/x")
-                    == "/xdg/deadwood")
+                    == "/xdg/deadwood"
+            )
         #endif
     }
 }

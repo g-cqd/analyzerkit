@@ -64,7 +64,10 @@ import Testing
         defer { remove() }
         let url = URL(fileURLWithPath: path)
         var converter = SarifColumns(
-            root: url.deletingLastPathComponent().path, byteOrderMark: .parsed, readCap: 1 << 20)
+            root: url.deletingLastPathComponent().path,
+            byteOrderMark: .parsed,
+            readCap: 1 << 20
+        )
         #expect(converter.column(4, line: 1, path: url.lastPathComponent) == 3)
     }
 }

@@ -31,9 +31,13 @@ import Testing
         #expect(
             found == [
                 SystemEntryPoint(
-                    typeName: "SampleExtensionHandler", origin: .infoPlist, key: "NSExtensionPrincipalClass"),
+                    typeName: "SampleExtensionHandler",
+                    origin: .infoPlist,
+                    key: "NSExtensionPrincipalClass"
+                ),
                 SystemEntryPoint(typeName: "SceneDelegate", origin: .infoPlist, key: "UISceneDelegateClassName"),
-            ])
+            ]
+        )
     }
 
     @Test func `storyboards and xibs name their custom classes`() {

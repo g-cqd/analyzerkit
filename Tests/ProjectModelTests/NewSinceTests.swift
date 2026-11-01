@@ -16,7 +16,11 @@ import Testing
 
     @Test func `an out-of-scope finding the baseline lacks is promoted, the rest stays out`() {
         let result = NewSince.promote(
-            inScope: inScope, outOfScope: outOfScope, notIn: ["b-old"], fingerprint: \.fingerprint)
+            inScope: inScope,
+            outOfScope: outOfScope,
+            notIn: ["b-old"],
+            fingerprint: \.fingerprint
+        )
         #expect(result.reported == inScope + [outOfScope[1]])
         #expect(result.outOfScope == [outOfScope[0]])
         #expect(result.promoted == ["c-new"])
@@ -24,7 +28,11 @@ import Testing
 
     @Test func `a baseline that holds everything promotes nothing`() {
         let result = NewSince.promote(
-            inScope: inScope, outOfScope: outOfScope, notIn: ["b-old", "c-new"], fingerprint: \.fingerprint)
+            inScope: inScope,
+            outOfScope: outOfScope,
+            notIn: ["b-old", "c-new"],
+            fingerprint: \.fingerprint
+        )
         #expect(result.reported == inScope)
         #expect(result.promoted.isEmpty)
     }
@@ -40,12 +48,14 @@ import Testing
         #expect(
             NewSince.notes(promoted: 2, matchesNothing: false, baseline: "base.json") == [
                 "2 finding(s) outside --only are new since base.json"
-            ])
+            ]
+        )
         #expect(NewSince.notes(promoted: 0, matchesNothing: false, baseline: "base.json").isEmpty)
         #expect(
             NewSince.notes(promoted: 0, matchesNothing: true, baseline: "base.json") == [
                 "every out-of-scope finding is new since base.json; the baseline may not match this corpus "
                     + "(check --relative-to and the analyzed paths)"
-            ])
+            ]
+        )
     }
 }

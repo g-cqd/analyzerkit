@@ -26,7 +26,10 @@ public struct CompilationConditions: Sendable, Hashable {
     /// platforms (the host's when none is given). `canImport` is not modelled.
     public var buildConfiguration: StaticBuildConfiguration {
         var configuration = StaticBuildConfiguration(
-            customConditions: defines, languageVersion: VersionTuple(6), compilerVersion: VersionTuple(6, 4))
+            customConditions: defines,
+            languageVersion: VersionTuple(6),
+            compilerVersion: VersionTuple(6, 4)
+        )
         if !platforms.isEmpty {
             // `os(OSX)` is the older spelling of `os(macOS)`.
             configuration.targetOSs = platforms.contains("macOS") ? platforms.union(["OSX"]) : platforms

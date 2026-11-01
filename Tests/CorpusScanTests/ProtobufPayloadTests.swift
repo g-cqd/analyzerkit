@@ -76,8 +76,16 @@ struct JSONOnlySample: Codable, Sendable { var name: String }
 
     @Test func `every helper round-trips, and default values take no bytes but an enumeration's`() throws {
         let full = ProtoSample(
-            name: "n", note: "", offset: -42, flag: true, kind: .special, tags: ["a", "", "b"],
-            children: [.init(line: 3), .init(line: 0)], child: .init(line: 0), wide: .max)
+            name: "n",
+            note: "",
+            offset: -42,
+            flag: true,
+            kind: .special,
+            tags: ["a", "", "b"],
+            children: [.init(line: 3), .init(line: 0)],
+            child: .init(line: 0),
+            wide: .max
+        )
         #expect(try Self.roundTrip(full) == full)
         // An enumeration has no default case to leave out, so it is the one field a default value writes.
         var onlyKind = WireWriter()
@@ -126,10 +134,14 @@ struct JSONOnlySample: Codable, Sendable { var name: String }
             let h = Harness(scratch: scratch)
             let a = try h.settled("A.swift", "alpha")
             _ = try await CorpusScanner.scan(paths: [a], cache: h.location(), identity: h.identity, salt: "s") {
-                _, _ in JSONOnlySample(name: "x")
+                _,
+                _ in JSONOnlySample(name: "x")
             }
             let proto: CorpusScan<ProtoSample> = try await CorpusScanner.scan(
-                paths: [a], cache: h.location(), identity: h.identity, salt: "s"
+                paths: [a],
+                cache: h.location(),
+                identity: h.identity,
+                salt: "s"
             ) { _, _ in ProtoSample(name: "y") }
             #expect(proto.cacheHits == 0)
             #expect(proto.files.first?.facts?.name == "y")

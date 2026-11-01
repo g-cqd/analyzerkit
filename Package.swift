@@ -47,10 +47,14 @@ let package = Package(
         // IndexStoreDB opens index stores for IndexStoreSupport, on macOS only. No semver tags: pinned to one revision, which
         // arcleak and deadwood must pin too (SwiftPM resolves one revision per package in a graph).
         .package(
-            url: "https://github.com/swiftlang/indexstore-db.git", revision: "0390867818c28241af4650eb4ef29af5669335a3"),
+            url: "https://github.com/swiftlang/indexstore-db.git",
+            revision: "0390867818c28241af4650eb4ef29af5669335a3"
+        ),
         // The wire format of the facts cache's shards (ADR-0011), pinned like AemiJSON to one revision on the same aemi.
         .package(
-            url: "https://github.com/g-cqd/AemiProtobuf.git", revision: "5d6e868179262f0b1a48297808953730e97cd720"),
+            url: "https://github.com/g-cqd/AemiProtobuf.git",
+            revision: "5d6e868179262f0b1a48297808953730e97cd720"
+        ),
         .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "2bb8507e079f552bfd893d5cdf487aab98e86a78"),
     ],
     targets: [
@@ -62,34 +66,43 @@ let package = Package(
                 "SourceCorpus", .product(name: "AemiJSONCore", package: "AemiJSON"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
             ],
-            swiftSettings: strictSwiftSettings),
+            swiftSettings: strictSwiftSettings
+        ),
         .testTarget(
-            name: "AnalyzerConfigurationTests", dependencies: ["AnalyzerConfiguration"],
-            swiftSettings: strictSwiftSettings),
+            name: "AnalyzerConfigurationTests",
+            dependencies: ["AnalyzerConfiguration"],
+            swiftSettings: strictSwiftSettings
+        ),
         // What every analyzer's command line shares: exit statuses and when a run fails (ADR-0018), then the option
         // groups of ADR-0006.
         .target(
             name: "AnalyzerCLI",
             dependencies: ["ProjectModel", .product(name: "ArgumentParser", package: "swift-argument-parser")],
-            swiftSettings: strictSwiftSettings),
+            swiftSettings: strictSwiftSettings
+        ),
         .testTarget(
             name: "AnalyzerCLITests",
             dependencies: [
                 "AnalyzerCLI", "ProjectModel", .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             exclude: ["Goldens"],
-            swiftSettings: strictSwiftSettings),
+            swiftSettings: strictSwiftSettings
+        ),
         .target(
             name: "Suppression",
             dependencies: [
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "AemiKernels", package: "aemi"),
-            ], swiftSettings: strictSwiftSettings),
+            ],
+            swiftSettings: strictSwiftSettings
+        ),
         .testTarget(
             name: "SuppressionTests",
             dependencies: [
                 "Suppression", .product(name: "SwiftParser", package: "swift-syntax"),
-            ], swiftSettings: strictSwiftSettings),
+            ],
+            swiftSettings: strictSwiftSettings
+        ),
         .target(
             name: "IndexStoreSupport",
             dependencies: [
@@ -98,14 +111,16 @@ let package = Package(
                 .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "SystemPackage", package: "swift-system", condition: .when(platforms: [.linux])),
             ],
-            swiftSettings: strictSwiftSettings),
+            swiftSettings: strictSwiftSettings
+        ),
         .testTarget(
             name: "IndexStoreSupportTests",
             dependencies: [
                 "IndexStoreSupport", "ProjectModel", "ReportSupport",
                 .product(name: "IndexStoreDB", package: "indexstore-db", condition: .when(platforms: [.macOS])),
             ],
-            swiftSettings: strictSwiftSettings),
+            swiftSettings: strictSwiftSettings
+        ),
         // The shared model of a Swift project: entry points the system or the
         // test frameworks create, code regions, generated files, and the shared
         // report contract (scope, schema version).

@@ -33,41 +33,53 @@ public struct InputOptions: ParsableArguments, Sendable {
     @Option(
         help: ArgumentHelp(
             "Configuration file (default: the tool's configuration file in the current directory, when present).",
-            valueName: "file"))
+            valueName: "file"
+        )
+    )
     public var config: String?
 
     @Option(
         name: .customLong("exclude-path"),
         help: ArgumentHelp(
             "Leave out the paths matching this pattern (repeatable): a substring, or a glob with *, ? or [.",
-            valueName: "pattern"))
+            valueName: "pattern"
+        )
+    )
     public var excludePaths: [String] = []
 
     @Option(
         name: .customLong("include-regions"),
         help: ArgumentHelp(
-            "Regions to treat as first-class code: preview,debug,test,mock,generated,script, or all.", valueName: "list"
-        ))
+            "Regions to treat as first-class code: preview,debug,test,mock,generated,script, or all.",
+            valueName: "list"
+        )
+    )
     var includeRegionsValue: String?
 
     @Option(
         name: .customLong("exclude-regions"),
-        help: ArgumentHelp("Regions to keep out of scope, even under --include-regions all.", valueName: "list"))
+        help: ArgumentHelp("Regions to keep out of scope, even under --include-regions all.", valueName: "list")
+    )
     var excludeRegionsValue: String?
 
     @Option(
         name: .customLong("define"),
-        help: ArgumentHelp("An #if condition to treat as set (repeatable; the compiler's -D).", valueName: "name"))
+        help: ArgumentHelp("An #if condition to treat as set (repeatable; the compiler's -D).", valueName: "name")
+    )
     public var defines: [String] = []
 
     @Option(
         help: ArgumentHelp(
-            "Report only findings in this file (repeatable); the whole corpus is still analyzed.", valueName: "file"))
+            "Report only findings in this file (repeatable); the whole corpus is still analyzed.",
+            valueName: "file"
+        )
+    )
     public var only: [String] = []
 
     @Option(
         name: .customLong("only-from"),
-        help: ArgumentHelp("Read --only paths from a file, one per line ('-' reads stdin).", valueName: "file"))
+        help: ArgumentHelp("Read --only paths from a file, one per line ('-' reads stdin).", valueName: "file")
+    )
     public var onlyFrom: String?
 
     @Option(name: .customLong("include"), help: .hidden) var includeAlias: String?
@@ -110,7 +122,10 @@ public struct OutputOptions: ParsableArguments, Sendable {
     @Option(
         name: .customLong("relative-to"),
         help: ArgumentHelp(
-            "Report paths relative to this directory (use `--relative-to .` in CI).", valueName: "directory"))
+            "Report paths relative to this directory (use `--relative-to .` in CI).",
+            valueName: "directory"
+        )
+    )
     public var relativeTo: String?
 
     @Flag(help: "Fail on warnings as well as errors; notes never fail a run.")
@@ -121,14 +136,17 @@ public struct OutputOptions: ParsableArguments, Sendable {
 
     @Option(
         name: .customLong("write-baseline"),
-        help: ArgumentHelp("Write the current findings as a baseline to this file, then exit 0.", valueName: "file"))
+        help: ArgumentHelp("Write the current findings as a baseline to this file, then exit 0.", valueName: "file")
+    )
     public var writeBaseline: String?
 
     @Option(
         name: .customLong("report-new-since"),
         help: ArgumentHelp(
             "The base branch's baseline file: findings outside --only that it does not hold are reported as new.",
-            valueName: "file"))
+            valueName: "file"
+        )
+    )
     public var reportNewSince: String?
 
     @Flag(help: "Say more on stderr: every path of a note, and why a capability was or was not used.")
@@ -151,7 +169,8 @@ public struct OutputOptions: ParsableArguments, Sendable {
 public struct RuleOptions: ParsableArguments, Sendable {
     @Option(
         name: .customLong("rules"),
-        help: ArgumentHelp("Only these rules, comma-separated (see the `rules` subcommand).", valueName: "list"))
+        help: ArgumentHelp("Only these rules, comma-separated (see the `rules` subcommand).", valueName: "list")
+    )
     var rulesValue: String?
 
     public init() {}
@@ -168,7 +187,9 @@ public struct CacheOptions: ParsableArguments, Sendable {
         name: .customLong("cache-path"),
         help: ArgumentHelp(
             "The facts cache's root directory (default: the tool's directory in the user cache directory).",
-            valueName: "directory"))
+            valueName: "directory"
+        )
+    )
     public var cachePath: String?
 
     @Flag(name: .customLong("no-cache"), help: "Do not read or write the facts cache.")
@@ -184,12 +205,14 @@ public struct IndexOptions: ParsableArguments, Sendable {
 
     @Option(
         name: .customLong("index-store-path"),
-        help: ArgumentHelp("The index store to use; implies --index-store.", valueName: "path"))
+        help: ArgumentHelp("The index store to use; implies --index-store.", valueName: "path")
+    )
     public var indexStorePath: String?
 
     @Flag(
         name: .customLong("index-store-build"),
-        help: "Build the project for an index store when none is found; implies --index-store.")
+        help: "Build the project for an index store when none is found; implies --index-store."
+    )
     public var indexStoreBuild = false
 
     public init() {}
@@ -206,12 +229,15 @@ public struct ExperimentalOptions: ParsableArguments, Sendable {
         name: .customLong("experimental-embeddings"),
         help: ArgumentHelp(
             "Use embeddings to rank findings by similarity (rank) or to adjust their confidence (confidence).",
-            valueName: "kind"))
+            valueName: "kind"
+        )
+    )
     var embeddingsValue: Embeddings?
 
     @Option(
         name: .customLong("embedding-bundle"),
-        help: ArgumentHelp("A Core ML model bundle for --experimental-embeddings.", valueName: "path"))
+        help: ArgumentHelp("A Core ML model bundle for --experimental-embeddings.", valueName: "path")
+    )
     public var embeddingBundle: String?
 
     @Flag(name: .customLong("experimental-embedding-rank"), help: .hidden) var rankAlias = false
@@ -229,7 +255,8 @@ public struct ExperimentalOptions: ParsableArguments, Sendable {
         }
         if confidenceAlias {
             used.append(
-                Deprecation(old: "--experimental-embedding-confidence", new: "--experimental-embeddings confidence"))
+                Deprecation(old: "--experimental-embedding-confidence", new: "--experimental-embeddings confidence")
+            )
         }
         return used
     }

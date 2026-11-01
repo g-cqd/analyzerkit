@@ -8,7 +8,10 @@ import Testing
 private func facts(_ source: String) -> FileSymbolFacts {
     let tree = Parser.parse(source: source)
     return FileSymbolFacts.collect(
-        tree: tree, file: "F.swift", converter: SourceLocationConverter(fileName: "F.swift", tree: tree))
+        tree: tree,
+        file: "F.swift",
+        converter: SourceLocationConverter(fileName: "F.swift", tree: tree)
+    )
 }
 
 /// What deadwood's collectors gave for ``fixture`` at deadwood `7aae121` (roadmap 0055's probe): a `D` row per
@@ -159,7 +162,8 @@ private let fixture = """
 
     @Test func `the names of an initializer, a subscript, an extension and an import are their first token`() throws {
         let found = facts(
-            "import Foo.Bar\nextension Outer.Inner {\n  public init() {}\n  subscript(i: Int) -> Int { i }\n}")
+            "import Foo.Bar\nextension Outer.Inner {\n  public init() {}\n  subscript(i: Int) -> Int { i }\n}"
+        )
         func name(_ text: String) throws -> (Int, Int) {
             let declaration = try #require((found.declarations + found.imports).first { $0.name == text })
             return (declaration.nameLocation.line, declaration.nameLocation.column)

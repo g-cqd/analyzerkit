@@ -214,7 +214,8 @@
                 result = String(
                     result.decomposedStringWithCanonicalMapping.unicodeScalars.filter {
                         $0.properties.generalCategory != .nonspacingMark
-                    })
+                    }
+                )
                 result = result.lowercased()
             }
             return result

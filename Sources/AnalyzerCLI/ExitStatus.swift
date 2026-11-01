@@ -26,7 +26,10 @@ public enum RunOutcome {
     /// The status of a finished run: 70 when it analyzed nothing although files were found, else 1 when a finding
     /// fails it, else 0.
     public static func status(
-        severities: some Sequence<Severity>, strict: Bool, analyzedFileCount: Int, skippedFileCount: Int
+        severities: some Sequence<Severity>,
+        strict: Bool,
+        analyzedFileCount: Int,
+        skippedFileCount: Int
     ) -> ExitStatus {
         if analyzedFileCount == 0, skippedFileCount > 0 { return .internalFailure }
         return fails(severities, strict: strict) ? .findings : .success

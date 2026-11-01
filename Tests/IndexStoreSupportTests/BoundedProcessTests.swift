@@ -9,7 +9,10 @@ import Testing
 
     @Test func `a child's exit status and both outputs are returned`() async throws {
         let result = try await BoundedProcess.run(
-            "/bin/sh", ["-c", "echo out; echo err >&2; exit 3"], environment: environment)
+            "/bin/sh",
+            ["-c", "echo out; echo err >&2; exit 3"],
+            environment: environment
+        )
         #expect(result.exitStatus == 3)
         #expect(!result.succeeded)
         #expect(result.standardOutputText == "out\n")
@@ -29,7 +32,11 @@ import Testing
         let start = ContinuousClock.now
         await #expect(throws: BoundedProcess.Failure.timedOut(executable: "/bin/sh", after: .milliseconds(300))) {
             try await BoundedProcess.run(
-                "/bin/sh", ["-c", "trap '' TERM; sleep 30"], environment: environment, timeout: .milliseconds(300))
+                "/bin/sh",
+                ["-c", "trap '' TERM; sleep 30"],
+                environment: environment,
+                timeout: .milliseconds(300)
+            )
         }
         // The grace period, not a wait for pipes the shell's own child still holds.
         #expect(ContinuousClock.now - start < .milliseconds(3_500))
@@ -42,11 +49,15 @@ import Testing
         defer { try? FileManager.default.removeItem(atPath: marker) }
         await #expect(throws: BoundedProcess.Failure.timedOut(executable: "/bin/sh", after: .milliseconds(500))) {
             try await BoundedProcess.run(
-                "/bin/sh", ["-c", "trap '' TERM; sleep 30 & echo $! > '\(marker)'; wait"], environment: environment,
-                timeout: .milliseconds(500))
+                "/bin/sh",
+                ["-c", "trap '' TERM; sleep 30 & echo $! > '\(marker)'; wait"],
+                environment: environment,
+                timeout: .milliseconds(500)
+            )
         }
         let pid = try #require(
-            Int32(String(contentsOfFile: marker, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)))
+            Int32(String(contentsOfFile: marker, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines))
+        )
         try await Task.sleep(for: .milliseconds(200))
         #expect(!Self.isRunning(pid), "the grandchild \(pid) is still running")
         kill(pid, SIGKILL)
@@ -69,8 +80,12 @@ import Testing
     /// A megabyte through a pipe whose reader keeps only 4 KiB: the child must still finish, not block on a full pipe.
     @Test func `output past the limit is read and dropped, and the child still finishes`() async throws {
         let result = try await BoundedProcess.run(
-            "/bin/sh", ["-c", "head -c 1048576 /dev/zero; head -c 1048576 /dev/zero >&2"], environment: environment,
-            timeout: .seconds(20), outputLimit: 4096)
+            "/bin/sh",
+            ["-c", "head -c 1048576 /dev/zero; head -c 1048576 /dev/zero >&2"],
+            environment: environment,
+            timeout: .seconds(20),
+            outputLimit: 4096
+        )
         #expect(result.succeeded)
         #expect(result.standardOutput.count == 4096)
         #expect(result.standardError.count == 4096)
@@ -84,9 +99,12 @@ import Testing
             "DEVELOPER_DIR": "/Applications/Xcode.app", "LANG": "C",
         ]
         let scrubbed = BoundedProcess.scrubbedEnvironment(
-            overrides: ["DEVELOPER_DIR": "/Xcode-beta.app"], source: source)
+            overrides: ["DEVELOPER_DIR": "/Xcode-beta.app"],
+            source: source
+        )
         #expect(
-            scrubbed == ["PATH": "/usr/bin:/bin", "HOME": "/Users/x", "LANG": "C", "DEVELOPER_DIR": "/Xcode-beta.app"])
+            scrubbed == ["PATH": "/usr/bin:/bin", "HOME": "/Users/x", "LANG": "C", "DEVELOPER_DIR": "/Xcode-beta.app"]
+        )
         let result = try await BoundedProcess.run("/usr/bin/env", [], environment: scrubbed)
         let lines = Set(result.standardOutputText.split(separator: "\n").map(String.init))
         #expect(lines == ["PATH=/usr/bin:/bin", "HOME=/Users/x", "LANG=C", "DEVELOPER_DIR=/Xcode-beta.app"])

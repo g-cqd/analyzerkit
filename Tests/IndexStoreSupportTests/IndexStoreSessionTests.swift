@@ -43,7 +43,9 @@
             func file(_ path: String, _ contents: String) throws -> String {
                 let full = root + "/" + path
                 try FileManager.default.createDirectory(
-                    atPath: (full as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+                    atPath: (full as NSString).deletingLastPathComponent,
+                    withIntermediateDirectories: true
+                )
                 try contents.write(toFile: full, atomically: true, encoding: .utf8)
                 return full
             }
@@ -86,7 +88,11 @@
         private func open(_ tree: Tree, _ path: String, _ files: [String]) async throws -> IndexStoreSession.Outcome {
             let dylib = try #require(await library())
             return IndexStoreSession.open(
-                tree.root + "/" + path, cacheRoot: tree.cache, library: dylib, analyzedFiles: files)
+                tree.root + "/" + path,
+                cacheRoot: tree.cache,
+                library: dylib,
+                analyzedFiles: files
+            )
         }
 
         @Test
@@ -177,7 +183,9 @@
                 try t.index(["src/Hub.swift", "src/Plugin.swift"], into: "store")
                 let script = try t.file("src/Script.swift", "let x = 1\n")
                 try FileManager.default.setAttributes(
-                    [.modificationDate: Date().addingTimeInterval(60)], ofItemAtPath: plugin)
+                    [.modificationDate: Date().addingTimeInterval(60)],
+                    ofItemAtPath: plugin
+                )
                 guard case .usable(let session) = try await open(t, "store", [hub, plugin, script]) else {
                     Issue.record("the store did not open")
                     return

@@ -35,10 +35,12 @@ struct StatKey: Equatable, Sendable {
             let changed = status.st_ctim
         #endif
         return StatKey(
-            device: UInt64(truncatingIfNeeded: status.st_dev), inode: UInt64(truncatingIfNeeded: status.st_ino),
+            device: UInt64(truncatingIfNeeded: status.st_dev),
+            inode: UInt64(truncatingIfNeeded: status.st_ino),
             size: UInt64(truncatingIfNeeded: status.st_size),
             modified: Int64(modified.tv_sec) * 1_000_000_000 + Int64(modified.tv_nsec),
-            changed: Int64(changed.tv_sec) * 1_000_000_000 + Int64(changed.tv_nsec))
+            changed: Int64(changed.tv_sec) * 1_000_000_000 + Int64(changed.tv_nsec)
+        )
     }
 }
 
@@ -71,7 +73,10 @@ final class Shard: @unchecked Sendable {
     var isDirty: Bool
 
     init(
-        index: Int, writtenAt: Int64 = 0, map: RawFileMap? = nil, entries: [String: StoredEntry] = [:],
+        index: Int,
+        writtenAt: Int64 = 0,
+        map: RawFileMap? = nil,
+        entries: [String: StoredEntry] = [:],
         dirty: Bool = false
     ) {
         self.index = index
@@ -109,7 +114,11 @@ final class Shard: @unchecked Sendable {
     }
 
     private static func parse(
-        _ reader: inout WireReader, index: Int, map: RawFileMap, identity: CacheIdentity, salt: UInt64
+        _ reader: inout WireReader,
+        index: Int,
+        map: RawFileMap,
+        identity: CacheIdentity,
+        salt: UInt64
     ) throws(WireError) -> Loaded {
         var tool: String?
         var version: String?
@@ -263,8 +272,11 @@ enum FactsStore {
         var paths: Set<String> = []
         for index in 0..<shardCount {
             if case .shard(let shard) = Shard.load(
-                path: shardPath(location, index), index: index, identity: identity, salt: salt)
-            {
+                path: shardPath(location, index),
+                index: index,
+                identity: identity,
+                salt: salt
+            ) {
                 paths.formUnion(shard.entries.keys)
             }
         }

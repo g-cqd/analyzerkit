@@ -47,7 +47,11 @@ public struct ReportEnvelope<Report: Encodable>: Encodable {
     public let timings: [String: Double]?
 
     public init(
-        _ report: Report, tool: String, version: String, runNotes: [RunNote] = [], skippedFiles: [SkippedFile] = [],
+        _ report: Report,
+        tool: String,
+        version: String,
+        runNotes: [RunNote] = [],
+        skippedFiles: [SkippedFile] = [],
         timings: [String: Double]? = nil
     ) {
         self.report = report

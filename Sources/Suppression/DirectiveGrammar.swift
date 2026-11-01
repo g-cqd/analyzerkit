@@ -36,7 +36,10 @@ public struct DirectiveGrammar: Sendable {
             // SAFETY: base comes from the borrowed buffer; the suffix pointer and count remain inside its bounds
             // for this synchronous call. The kernel returns count when there is no match. No pointer escapes.
             let found = unsafe AemiKernels.firstIndex(
-                inSet: Self.marker, base: base.advanced(by: offset), count: bytes.count - offset)
+                inSet: Self.marker,
+                base: base.advanced(by: offset),
+                count: bytes.count - offset
+            )
             offset += found
             guard offset < bytes.count else { return false }
             let start = offset + 1
@@ -54,7 +57,9 @@ public struct DirectiveGrammar: Sendable {
     }
 
     public func parse<Rule: Hashable & Sendable>(
-        comment: String, line: Int, rule: (String) -> Rule?
+        comment: String,
+        line: Int,
+        rule: (String) -> Rule?
     ) -> Directive<Rule>? {
         guard containsMarker(comment) else { return nil }
         var text = Substring(comment)
@@ -107,7 +112,8 @@ public struct DirectiveGrammar: Sendable {
     /// only comments with this grammar's marker. Doc-comment trivia is visited but its extra slash/star is not
     /// stripped by the grammar, preserving the tools' existing non-directive behavior for doc comments.
     public func scan<Result>(
-        tree: SourceFileSyntax, converter: SourceLocationConverter,
+        tree: SourceFileSyntax,
+        converter: SourceLocationConverter,
         parse: (_ comment: String, _ line: Int) -> Result?
     ) -> [Result] {
         var found: [Result] = []
@@ -119,7 +125,9 @@ public struct DirectiveGrammar: Sendable {
                     .docLineComment(let comment), .docBlockComment(let comment):
                     if containsMarker(comment),
                         let directive = parse(
-                            comment, converter.location(for: AbsolutePosition(utf8Offset: offset)).line)
+                            comment,
+                            converter.location(for: AbsolutePosition(utf8Offset: offset)).line
+                        )
                     {
                         found.append(directive)
                     }

@@ -43,7 +43,11 @@ struct DocumentationLayoutTests {
         let documents = ["adr", "roadmap", "diary", "research"].flatMap { DocumentationLayout.documents(in: $0) }
         let research = Set(DocumentationLayout.documents(in: "research").map(\.name))
         let problems = DocumentationLayout.referenceProblems(
-            in: documents, adrs: Self.numbers(in: "adr"), roadmap: Self.numbers(in: "roadmap"), research: research)
+            in: documents,
+            adrs: Self.numbers(in: "adr"),
+            roadmap: Self.numbers(in: "roadmap"),
+            research: research
+        )
         #expect(problems.isEmpty, "\(problems)")
     }
 
@@ -70,22 +74,27 @@ struct DocumentationLayoutTests {
         #expect(DocumentationLayout.adrProblems(in: oneWay).count == 1)
         #expect(
             DocumentationLayout.adrProblems(in: [Self.record("0001-a.md", "status: superseded\ndate: 2026-10-29")])
-                .count == 1)
+                .count == 1
+        )
         #expect(
             DocumentationLayout.adrProblems(in: [Self.record("0001-a.md", "status: draft\ndate: 2026-10-29")]).count
-                == 1)
+                == 1
+        )
         #expect(DocumentationLayout.adrProblems(in: [Self.record("0001-a.md", "status: accepted")]).count == 1)
         #expect(
             DocumentationLayout.adrProblems(in: [Self.record("0001-a.md", "status: accepted\ndate: 29.10.2026")]).count
-                == 1)
+                == 1
+        )
         #expect(
-            DocumentationLayout.adrProblems(in: [Self.record("a.md", "status: accepted\ndate: 2026-10-29")]).count == 1)
+            DocumentationLayout.adrProblems(in: [Self.record("a.md", "status: accepted\ndate: 2026-10-29")]).count == 1
+        )
         #expect(
             DocumentationLayout.adrProblems(in: [
                 Self.record("0001-a.md", "status: accepted\ndate: 2026-10-29"),
                 Self.record("0001-b.md", "status: accepted\ndate: 2026-10-29"),
             ])
-            .count == 1)
+            .count == 1
+        )
     }
 
     @Test func `a roadmap entry needs a date, a known status, and blockers that exist and are not done`() {
@@ -98,18 +107,22 @@ struct DocumentationLayoutTests {
             DocumentationLayout.roadmapProblems(in: [
                 entry("0001", "in-progress"), entry("0002", "not-started", "[0001]"),
             ])
-            .isEmpty)
+            .isEmpty
+        )
         #expect(DocumentationLayout.roadmapProblems(in: [entry("0001", "finished")]).count == 1)
         #expect(DocumentationLayout.roadmapProblems(in: [entry("0001", "not-started", "[0009]")]).count == 1)
         #expect(
             DocumentationLayout.roadmapProblems(in: [entry("0001", "done"), entry("0002", "not-started", "[0001]")])
-                .count == 1)
+                .count == 1
+        )
         #expect(
             DocumentationLayout.roadmapProblems(in: [entry("0001", "in-progress"), entry("0002", "done", "[0001]")])
-                .isEmpty)
+                .isEmpty
+        )
         #expect(DocumentationLayout.roadmapProblems(in: [entry("0001", "done", date: "")]).count == 1)
         #expect(
-            DocumentationLayout.roadmapProblems(in: [entry("0001", "done"), entry("0001", "done")]).count == 1)
+            DocumentationLayout.roadmapProblems(in: [entry("0001", "done"), entry("0001", "done")]).count == 1
+        )
     }
 
     @Test func `a diary file must be named by date and stay within the budget, inclusive`() {
@@ -124,7 +137,11 @@ struct DocumentationLayoutTests {
     func `a local reference must name a record that exists, and a reference into another repository is not checked`() {
         func problems(_ body: String) -> [String] {
             DocumentationLayout.referenceProblems(
-                in: [("note.md", body)], adrs: ["0001"], roadmap: ["0002"], research: ["2026-10-29-x.md"])
+                in: [("note.md", body)],
+                adrs: ["0001"],
+                roadmap: ["0002"],
+                research: ["2026-10-29-x.md"]
+            )
         }
         #expect(problems("ADR-0001, roadmap 0002, research `2026-10-29-x.md`, Roadmap 0002.").isEmpty)
         #expect(problems("See ADR-0009.").count == 1)

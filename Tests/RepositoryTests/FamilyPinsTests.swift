@@ -66,10 +66,12 @@ import Testing
         try family([
             "Kit": Self.manifest(
                 #"revision: "0390867818c28241af4650eb4ef29af5669335a3""#,
-                extra: "\n        " + parser.replacingOccurrences(of: "%@", with: "5.1")),
+                extra: "\n        " + parser.replacingOccurrences(of: "%@", with: "5.1")
+            ),
             "Tool": Self.manifest(
                 #"revision: "0390867818c28241af4650eb4ef29af5669335a3""#,
-                extra: "\n        " + parser.replacingOccurrences(of: "%@", with: "8.1")),
+                extra: "\n        " + parser.replacingOccurrences(of: "%@", with: "8.1")
+            ),
         ]) { root in
             let (status, output) = try run(root)
             #expect(status == 0, "\(output)")

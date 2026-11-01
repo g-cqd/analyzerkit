@@ -67,7 +67,14 @@ struct ControlFlowBuilder {
     private mutating func makeNode(_ kind: ControlFlowGraph.NodeKind, syntax: Syntax?, line: Int) -> Int {
         nodes.append(
             ControlFlowGraph.Node(
-                id: nodes.count, kind: kind, line: line, syntax: syntax, isDeferred: deferring > 0, successors: []))
+                id: nodes.count,
+                kind: kind,
+                line: line,
+                syntax: syntax,
+                isDeferred: deferring > 0,
+                successors: []
+            )
+        )
         return nodes.count - 1
     }
 
@@ -248,7 +255,10 @@ struct ControlFlowBuilder {
     }
 
     private mutating func lowerLoop(
-        head: some SyntaxProtocol, body: CodeBlockSyntax, after opens: [Open], headThrows: Bool
+        head: some SyntaxProtocol,
+        body: CodeBlockSyntax,
+        after opens: [Open],
+        headThrows: Bool
     ) -> [Open] {
         let label = pendingLabel
         pendingLabel = nil

@@ -59,7 +59,11 @@ public struct ProjectLayout: Sendable, Equatable {
             if manifest.hasSuffix("/Package.swift") { packages.insert(parent) } else { containers.insert(parent) }
         }
         return Self(
-            root: root, repositoryRoot: repository, packages: packages.sorted(), containers: containers.sorted())
+            root: root,
+            repositoryRoot: repository,
+            packages: packages.sorted(),
+            containers: containers.sorted()
+        )
     }
 
     /// What one ancestor holds, and what finding it cost.
@@ -78,13 +82,21 @@ public struct ProjectLayout: Sendable, Equatable {
     /// subdirectory is opened and no entry the listing typed is stat'ed. An unreadable directory has none.
     static func markers(in directory: String) -> Markers {
         let policy = DirectoryWalk.Policy(
-            includesHidden: true, links: .never, reportsDirectories: true, maxDepth: 1, workers: 1)
+            includesHidden: true,
+            links: .never,
+            reportsDirectories: true,
+            maxDepth: 1,
+            workers: 1
+        )
         guard let listing = try? DirectoryWalk.walk(directory, policy: policy) else {
             return Markers(hasContainer: false, hasPackage: false, directoriesOpened: 0, statCalls: 0)
         }
         var markers = Markers(
-            hasContainer: false, hasPackage: false, directoriesOpened: listing.statistics.directoriesOpened,
-            statCalls: listing.statistics.statCalls)
+            hasContainer: false,
+            hasPackage: false,
+            directoriesOpened: listing.statistics.directoriesOpened,
+            statCalls: listing.statistics.statCalls
+        )
         for entry in listing.entries {
             if entry.relativePath == "Package.swift" { markers.hasPackage = true }
             if entry.kind == .directory, isContainer(entry.relativePath) { markers.hasContainer = true }

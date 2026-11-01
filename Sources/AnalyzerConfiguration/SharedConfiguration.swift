@@ -109,10 +109,17 @@ public enum SharedConfiguration {
     ///   - analyzedPaths: the paths given, absolute or relative to `currentDirectory`; their project root is the second
     ///     place looked at.
     public static func resolve(
-        for tool: Tool, explicit: String?, currentDirectory: String, analyzedPaths: [String]
+        for tool: Tool,
+        explicit: String?,
+        currentDirectory: String,
+        analyzedPaths: [String]
     ) throws(Failure) -> Resolved {
         let files = try locate(
-            tool: tool, explicit: explicit, currentDirectory: currentDirectory, analyzedPaths: analyzedPaths)
+            tool: tool,
+            explicit: explicit,
+            currentDirectory: currentDirectory,
+            analyzedPaths: analyzedPaths
+        )
         var layers: [(source: Source, members: OrderedDictionary<String, JSONValue>)] = []
         for file in files {
             let members = try object(at: file.path)
@@ -137,7 +144,10 @@ public enum SharedConfiguration {
 
     /// The files of the one configuration directory, the shared file first (ADR-0020 item 1).
     private static func locate(
-        tool: Tool, explicit: String?, currentDirectory: String, analyzedPaths: [String]
+        tool: Tool,
+        explicit: String?,
+        currentDirectory: String,
+        analyzedPaths: [String]
     ) throws(Failure) -> [File] {
         if let explicit {
             let path = SourcePath.absolute(explicit, in: currentDirectory)
@@ -201,7 +211,8 @@ public enum SharedConfiguration {
         do {
             // A repeated key would keep only its last value, a key silently dropped (ADR-0020 item 4).
             value = JSONValue(
-                try AemiJSON.parse([UInt8](data), options: JSONParseOptions(duplicateKeys: .throwError)).root)
+                try AemiJSON.parse([UInt8](data), options: JSONParseOptions(duplicateKeys: .throwError)).root
+            )
         } catch {
             throw .invalid(path: path, reason: "\(error)")
         }
@@ -211,7 +222,9 @@ public enum SharedConfiguration {
 
     /// The shared file's top level and this tool's section, each checked; other tools' sections only as objects.
     private static func sharedLayers(
-        _ members: OrderedDictionary<String, JSONValue>, path: String, tool: Tool
+        _ members: OrderedDictionary<String, JSONValue>,
+        path: String,
+        tool: Tool
     ) throws(Failure) -> [(source: Source, members: OrderedDictionary<String, JSONValue>)] {
         var top: OrderedDictionary<String, JSONValue> = [:]
         var section: OrderedDictionary<String, JSONValue>?
@@ -238,7 +251,11 @@ public enum SharedConfiguration {
     }
 
     private static func check(
-        _ key: String, _ value: JSONValue, allowed: Set<String>, reported: String, path: String
+        _ key: String,
+        _ value: JSONValue,
+        allowed: Set<String>,
+        reported: String,
+        path: String
     ) throws(Failure) {
         if sharedKeys.contains(key) {
             try checkType(key, value, path: path)
@@ -262,7 +279,8 @@ public enum SharedConfiguration {
 
     /// The layers merged in order: objects key by key (RFC 7396), `exclude` lists concatenated, the rest replaced.
     private static func merged(
-        _ layers: [(source: Source, members: OrderedDictionary<String, JSONValue>)], directory: String?
+        _ layers: [(source: Source, members: OrderedDictionary<String, JSONValue>)],
+        directory: String?
     ) throws(Failure) -> Resolved {
         var result: OrderedDictionary<String, JSONValue> = [:]
         var setters: OrderedDictionary<String, [Source]> = [:]

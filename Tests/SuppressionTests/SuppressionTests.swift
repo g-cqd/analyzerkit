@@ -21,7 +21,9 @@ import Testing
                     grammar.parse(
                         comment: "// @\(prefix)\(verb) first, second unknown first -- reviewed -- deliberately",
                         line: 10,
-                        rule: Rule.init(rawValue:)))
+                        rule: Rule.init(rawValue:)
+                    )
+                )
                 #expect(directive.kind == kind)
                 #expect(directive.rules == [.first, .second, .first])
                 #expect(directive.line == 10)
@@ -29,7 +31,8 @@ import Testing
             }
             for suffix in ["", " all", " unknown,all", " ,,,"] {
                 let directive = try #require(
-                    grammar.parse(comment: "/* @\(prefix)accept\(suffix) */", line: 1, rule: Rule.init(rawValue:)))
+                    grammar.parse(comment: "/* @\(prefix)accept\(suffix) */", line: 1, rule: Rule.init(rawValue:))
+                )
                 #expect(directive.rules.isEmpty)
                 #expect(directive.covers(.first))
             }
@@ -41,7 +44,8 @@ import Testing
                 #expect(grammar.parse(comment: comment, line: 1, rule: Rule.init(rawValue:)) == nil)
             }
             let emptyReason = try #require(
-                grammar.parse(comment: "// @\(prefix)accept --  ", line: 1, rule: Rule.init(rawValue:)))
+                grammar.parse(comment: "// @\(prefix)accept --  ", line: 1, rule: Rule.init(rawValue:))
+            )
             #expect(emptyReason.reason == "")
         }
     }

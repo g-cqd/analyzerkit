@@ -19,19 +19,24 @@ import Testing
     @Test func `a run that skipped every file it found is an internal failure, findings or not`() {
         #expect(
             RunOutcome.status(severities: [], strict: false, analyzedFileCount: 0, skippedFileCount: 2)
-                == .internalFailure)
+                == .internalFailure
+        )
         #expect(
             RunOutcome.status(severities: [.error], strict: false, analyzedFileCount: 0, skippedFileCount: 1)
-                == .internalFailure)
+                == .internalFailure
+        )
         #expect(
             RunOutcome.status(severities: [.error], strict: false, analyzedFileCount: 1, skippedFileCount: 1)
-                == .findings)
+                == .findings
+        )
         #expect(
             RunOutcome.status(severities: [.warning], strict: false, analyzedFileCount: 3, skippedFileCount: 0)
-                == .success)
+                == .success
+        )
         #expect(
             RunOutcome.status(severities: [.warning], strict: true, analyzedFileCount: 3, skippedFileCount: 0)
-                == .findings)
+                == .findings
+        )
         #expect(RunOutcome.status(severities: [], strict: true, analyzedFileCount: 0, skippedFileCount: 0) == .success)
     }
 }

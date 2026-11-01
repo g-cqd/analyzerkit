@@ -78,7 +78,9 @@ public enum SourceDiscovery {
         let root = URL(fileURLWithPath: directory).path
         let prefix = root.hasSuffix("/") ? root : root + "/"
         let policy = DirectoryWalk.Policy(
-            skippedNames: skippedComponents, includesHidden: false, links: .withinRoot,
+            skippedNames: skippedComponents,
+            includesHidden: false,
+            links: .withinRoot,
             accepts: { candidate in
                 let path = prefix + candidate.relativePath
                 switch candidate.kind {
@@ -87,7 +89,8 @@ public enum SourceDiscovery {
                 case .file, .link: return isIncluded(path) && !isExcluded(path)
                 case .other: return false
                 }
-            })
+            }
+        )
         guard let result = try? DirectoryWalk.walk(root, policy: policy) else {
             return Discovery(files: [], unreadableDirectories: [root], statCalls: 0)
         }

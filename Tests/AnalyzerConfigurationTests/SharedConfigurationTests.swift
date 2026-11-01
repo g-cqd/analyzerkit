@@ -4,7 +4,10 @@ import Testing
 
 @Suite struct SharedConfigurationTests {
     private static let arcleak = SharedConfiguration.Tool(
-        name: "arcleak", fileName: ".arcleak.json", keys: ["rules", "debugBuild", "contracts"])
+        name: "arcleak",
+        fileName: ".arcleak.json",
+        keys: ["rules", "debugBuild", "contracts"]
+    )
 
     /// A repository root holding `files` (path: contents), resolved through links.
     private func project(_ files: [String: String], _ body: (String) throws -> Void) throws {
@@ -12,11 +15,14 @@ import Testing
             .resolvingSymlinksInPath()
         defer { try? FileManager.default.removeItem(at: root) }
         for (path, text) in files.merging(
-            [".git": "gitdir: none\n", "Sources/App/A.swift": ""], uniquingKeysWith: { a, _ in a })
-        {
+            [".git": "gitdir: none\n", "Sources/App/A.swift": ""],
+            uniquingKeysWith: { a, _ in a }
+        ) {
             let url = root.appending(path: path)
             try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try Data(text.utf8).write(to: url)
         }
         try body(root.path)
@@ -27,8 +33,11 @@ import Testing
         -> SharedConfiguration.Resolved
     {
         try SharedConfiguration.resolve(
-            for: Self.arcleak, explicit: explicit, currentDirectory: directory.isEmpty ? root : root + "/" + directory,
-            analyzedPaths: ["."])
+            for: Self.arcleak,
+            explicit: explicit,
+            currentDirectory: directory.isEmpty ? root : root + "/" + directory,
+            analyzedPaths: ["."]
+        )
     }
 
     private func object(_ resolved: SharedConfiguration.Resolved) throws -> [String: Any] {
@@ -56,7 +65,8 @@ import Testing
             #expect(
                 resolved.sources.map(\.description) == [
                     root + "/.swift-analyzers.json", root + "/.swift-analyzers.json#arcleak", root + "/.arcleak.json",
-                ])
+                ]
+            )
             let regions = try #require(resolved.overrides.first { $0.key == "includeRegions" })
             #expect(regions.winner.description == root + "/.swift-analyzers.json#arcleak" && !regions.combined)
             #expect(regions.overridden.map(\.description) == [root + "/.swift-analyzers.json"])
@@ -101,11 +111,18 @@ import Testing
         try Data(#"{"exclude": ["outer"]}"#.utf8).write(to: outer.appending(path: ".arcleak.json"))
         try Data("gitdir: none\n".utf8).write(to: repository.appending(path: ".git"))
         let inside = try SharedConfiguration.resolve(
-            for: Self.arcleak, explicit: nil, currentDirectory: repository.appending(path: "Sources").path,
-            analyzedPaths: ["."])
+            for: Self.arcleak,
+            explicit: nil,
+            currentDirectory: repository.appending(path: "Sources").path,
+            analyzedPaths: ["."]
+        )
         #expect(inside.sources.isEmpty, "a configuration above the repository root is not the project's")
         let outside = try SharedConfiguration.resolve(
-            for: Self.arcleak, explicit: nil, currentDirectory: loose.path, analyzedPaths: ["."])
+            for: Self.arcleak,
+            explicit: nil,
+            currentDirectory: loose.path,
+            analyzedPaths: ["."]
+        )
         #expect(outside.sources.isEmpty, "outside a repository nothing beyond the current directory is read")
     }
 
@@ -161,9 +178,11 @@ import Testing
     @Test func `a failure gives its reason apart from its path`() {
         #expect(
             SharedConfiguration.Failure.unknownKey(path: "/p/.arcleak.json", key: "bogus").reason
-                == #"unknown key "bogus""#)
+                == #"unknown key "bogus""#
+        )
         #expect(
-            SharedConfiguration.Failure.invalid(path: "/p", reason: "not a JSON object").reason == "not a JSON object")
+            SharedConfiguration.Failure.invalid(path: "/p", reason: "not a JSON object").reason == "not a JSON object"
+        )
         #expect(SharedConfiguration.Failure.unreadable(path: "/p", reason: "no such file").reason == "no such file")
         #expect(SharedConfiguration.Failure.unknownKey(path: "/p", key: "k").description == #"/p: unknown key "k""#)
     }
@@ -192,12 +211,18 @@ import Testing
             .init(name: "deadwood", fileName: ".deadwood.json", keys: ["rules", "production", "testsGlob"]),
             .init(name: "dolly", fileName: ".dolly.json", keys: ["rules", "duplication"]),
             .init(
-                name: "fcheck", fileName: ".fcheck.json",
-                keys: ["disable", "severity", "resources", "flush", "includeTests"]),
+                name: "fcheck",
+                fileName: ".fcheck.json",
+                keys: ["disable", "severity", "resources", "flush", "includeTests"]
+            ),
         ]
         for tool in tools {
             let resolved = try SharedConfiguration.resolve(
-                for: tool, explicit: sample, currentDirectory: "/", analyzedPaths: [])
+                for: tool,
+                explicit: sample,
+                currentDirectory: "/",
+                analyzedPaths: []
+            )
             #expect(resolved.sources.count == 2, "\(tool.name) reads the top level and its section")
         }
     }

@@ -19,14 +19,20 @@ import Testing
                 SampleView()
             }
             #endif
-            """)
+            """
+        )
 
         #expect(
             found == [
                 TopLevelCode(
-                    kind: .preview, macroName: "Preview", startLine: 3, endLine: 5,
-                    region: [.preview, .debugOnly])
-            ])
+                    kind: .preview,
+                    macroName: "Preview",
+                    startLine: 3,
+                    endLine: 5,
+                    region: [.preview, .debugOnly]
+                )
+            ]
+        )
     }
 
     @Test func `script statements are script code, declarations are not top-level code`() {
@@ -35,7 +41,8 @@ import Testing
             func helper() -> Int { 1 }
             let value = helper()
             print(value)
-            """)
+            """
+        )
 
         #expect(found.map(\.kind) == [.statements])
         #expect(found.map(\.startLine) == [3])
@@ -55,7 +62,8 @@ import Testing
             #else
             print("other")
             #endif
-            """)
+            """
+        )
 
         #expect(found.map(\.region) == [.script, [.script, .debugOnly], .script, .script])
     }

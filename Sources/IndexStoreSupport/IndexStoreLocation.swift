@@ -44,7 +44,8 @@ public enum IndexStoreLocation {
             path: path,
             reason: "\(path) \(what): no records or units in it, in a vN directory below it, or where a build puts a "
                 + "store below it; pass the store directory, <DerivedData>/<Project>-<hash>/Index.noindex/DataStore "
-                + "for Xcode or .build/debug/index/store for SwiftPM")
+                + "for Xcode or .build/debug/index/store for SwiftPM"
+        )
     }
 
     /// The store for a project: SwiftPM's under the layout root's `.build` first, then the newest DerivedData store

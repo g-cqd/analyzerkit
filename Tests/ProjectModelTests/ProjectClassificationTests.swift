@@ -33,7 +33,9 @@ import Testing
                     """
                     .target(name: "Lib"),
                     .testTarget(name: "Checks", dependencies: ["Lib"], path: "Checks"),
-                    """))
+                    """
+                )
+            )
             let library = try f.file("Sources/Lib/Lib.swift")
             let check = try f.file("Checks/LibCheck.swift")
             let model = try f.classification(of: [library, check])
@@ -44,8 +46,13 @@ import Testing
                 provenance
                     == .targets([
                         ProjectTarget(
-                            name: "Checks", kind: "testTarget", isTest: true, container: f.path("Package.swift"))
-                    ]))
+                            name: "Checks",
+                            kind: "testTarget",
+                            isTest: true,
+                            container: f.path("Package.swift")
+                        )
+                    ])
+            )
         }
     }
 
@@ -58,7 +65,9 @@ import Testing
                     .target(name: "Package"),
                     .executableTarget(name: "FixtureGen", path: "Tests/FixtureGen"),
                     .testTarget(name: "PackageTests"),
-                    """))
+                    """
+                )
+            )
             let tool = try f.file("Tests/FixtureGen/main.swift")
             let test = try f.file("Tests/PackageTests/PackageTests.swift")
             let model = try f.classification(of: [tool, test])
@@ -75,7 +84,9 @@ import Testing
                     """
                     .target(name: "Package", exclude: ["Old"]),
                     .target(name: "Picked", path: "Modules/Picked", sources: ["Kept.swift", "Nested"]),
-                    """))
+                    """
+                )
+            )
             let inSource = try f.file("Source/Package/A.swift")
             let excluded = try f.file("Source/Package/Old/Legacy.swift")
             let kept = try f.file("Modules/Picked/Kept.swift")
@@ -95,7 +106,8 @@ import Testing
             try f.file("Package.swift", manifest(".target(name: \"Outer\", path: \"Modules\"),", name: "Outer"))
             try f.file(
                 "Modules/Inner/Package.swift",
-                manifest(".target(name: \"Inner\"),\n.testTarget(name: \"InnerTests\"),", name: "Inner"))
+                manifest(".target(name: \"Inner\"),\n.testTarget(name: \"InnerTests\"),", name: "Inner")
+            )
             let outer = try f.file("Modules/Outer.swift")
             let inner = try f.file("Modules/Inner/Sources/Inner/Inner.swift")
             let innerTest = try f.file("Modules/Inner/Tests/InnerTests/InnerTests.swift")
@@ -127,7 +139,9 @@ import Testing
         ("non-literal path", ".target(name: \"Package\", path: base + \"/Sources\"),", "let base = \".\""),
     ])
     func `a manifest that must run to be known is unknown, and its files fall back to conventions`(
-        shape: String, targets: String, extra: String
+        shape: String,
+        targets: String,
+        extra: String
     ) throws {
         try ProjectFixture.with { f in
             var text = manifest(shape == "targets" ? "" : targets) + "\n" + extra + "\n"
@@ -142,7 +156,8 @@ import Testing
             #expect(model.unknownProjects.map(\.path) == [manifestPath], "\(shape)")
             #expect(
                 model.classify(test)
-                    == FileClassification(region: .test, provenance: .convention(.unknownProject(manifestPath))))
+                    == FileClassification(region: .test, provenance: .convention(.unknownProject(manifestPath)))
+            )
             let issue = model.issues(for: [test, source]).first { $0.code == "project-unknown" }
             #expect(issue?.paths == [test, source].sorted(), "\(shape)")
         }
@@ -179,7 +194,8 @@ import Testing
                 exceptions: [
                     (target: "App", files: ["Info.plist", "Debug/Only.swift"]),
                     (target: "Widget", files: ["Shared.swift"]),
-                ])
+                ]
+            )
             let widgetFolder = xcode.folder("Widget", exceptions: [(target: "Widget", files: ["Entry.swift"])])
             xcode.target("App", type: ProductType.application, folders: [app])
             xcode.target("Widget", type: ProductType.appExtension)
@@ -253,11 +269,15 @@ import Testing
             var xcode = XcodeFixture()
             let app = xcode.folder("App")
             let generate = xcode.script(
-                "Generate \"Strings\"", "\"${SRCROOT}/tools/gen\" > \"$SCRIPT_OUTPUT_FILE_0\"\n",
-                outputs: ["$(SRCROOT)/App/Strings.swift"])
+                "Generate \"Strings\"",
+                "\"${SRCROOT}/tools/gen\" > \"$SCRIPT_OUTPUT_FILE_0\"\n",
+                outputs: ["$(SRCROOT)/App/Strings.swift"]
+            )
             let clean = xcode.script(
-                "Clean", "if [ \"$CONFIGURATION\" = Debug ]; then\n  xcrun swift ./scripts/clean.swift\nfi\n",
-                outputs: ["$(SRCROOT)/scripts/clean.swift"])
+                "Clean",
+                "if [ \"$CONFIGURATION\" = Debug ]; then\n  xcrun swift ./scripts/clean.swift\nfi\n",
+                outputs: ["$(SRCROOT)/scripts/clean.swift"]
+            )
             xcode.target("App", type: ProductType.application, folders: [app], phases: [generate, clean])
             try f.project("App", xcode)
             let strings = try f.file("App/Strings.swift")
@@ -268,7 +288,8 @@ import Testing
             #expect(model.classify(view).region == [])
             #expect(model.classify(cleaner).region == .script, "listed as an output, but the phase runs it")
             #expect(
-                model.classify(cleaner).provenance == .runScript(phase: "Clean", container: f.path("App.xcodeproj")))
+                model.classify(cleaner).provenance == .runScript(phase: "Clean", container: f.path("App.xcodeproj"))
+            )
         }
     }
 
@@ -293,7 +314,8 @@ import Testing
             try f.project("App", xcode)
             try f.file(
                 "Packages/Feature/Package.swift",
-                manifest(".target(name: \"Feature\"),\n.testTarget(name: \"FeatureTests\"),", name: "Feature"))
+                manifest(".target(name: \"Feature\"),\n.testTarget(name: \"FeatureTests\"),", name: "Feature")
+            )
             let view = try f.file("App/View.swift")
             let feature = try f.file("Packages/Feature/Sources/Feature/F.swift")
             let featureTest = try f.file("Packages/Feature/Tests/FeatureTests/FT.swift")
@@ -341,10 +363,14 @@ import Testing
                     """
                     .target(name: "Package"),
                     .target(name: "TestSupport", path: "Tests/Support"),
-                    """))
+                    """
+                )
+            )
             let helper = try f.file("Sources/Package/Expect.swift", "import XCTest\nfunc check() {}\n")
             let generated = try f.file(
-                "Sources/Package/Out.swift", "// Generated by SwiftGen. Do not edit.\nlet a = 1\n")
+                "Sources/Package/Out.swift",
+                "// Generated by SwiftGen. Do not edit.\nlet a = 1\n"
+            )
             let support = try f.file("Tests/Support/Fixture.swift", "struct Fixture {}\n")
             let model = try f.classification(of: [helper, generated, support])
             func classify(_ path: String) throws -> FileClassification {

@@ -34,8 +34,10 @@ import Testing
 
     @Test func `a file saved in the second its unit was written counts as indexed`() {
         let coverage = IndexCoverage.classify(
-            ["/p/Same.swift"], unitDate: { _ in Date(timeIntervalSince1970: 1_000) },
-            modificationDate: { _ in Date(timeIntervalSince1970: 1_000) })
+            ["/p/Same.swift"],
+            unitDate: { _ in Date(timeIntervalSince1970: 1_000) },
+            modificationDate: { _ in Date(timeIntervalSince1970: 1_000) }
+        )
         #expect(coverage.files.map(\.coverage) == [.indexed])
     }
 

@@ -81,7 +81,13 @@ public enum TopLevelCodeScanner {
                 }
             found.append(
                 TopLevelCode(
-                    kind: kind, macroName: macroName, startLine: start, endLine: end, region: itemRegion))
+                    kind: kind,
+                    macroName: macroName,
+                    startLine: start,
+                    endLine: end,
+                    region: itemRegion
+                )
+            )
         }
     }
 

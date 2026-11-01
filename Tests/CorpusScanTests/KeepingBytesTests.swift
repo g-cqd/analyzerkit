@@ -15,7 +15,10 @@ import Testing
             let missing = scratch.path("Missing.swift")
             for run in 0..<2 {
                 let result = try await CorpusScanner.scan(
-                    paths: [a, b, missing], cache: h.location(), identity: h.identity, keepingBytes: true
+                    paths: [a, b, missing],
+                    cache: h.location(),
+                    identity: h.identity,
+                    keepingBytes: true
                 ) { _, bytes in SampleFacts(names: [String(decoding: bytes, as: UTF8.self)]) }
                 let byName = Dictionary(uniqueKeysWithValues: result.files.map { ($0.path, $0) })
                 #expect(byName[SourcePath.canonical(a)]?.bytes == Array("a1\na2".utf8), "run \(run)")

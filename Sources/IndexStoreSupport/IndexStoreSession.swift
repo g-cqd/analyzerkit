@@ -32,8 +32,10 @@
             self.coverage = coverage
             let reader = UncheckedDatabase(database)
             freshness = IndexFreshness(
-                coverage: coverage, unitDate: { reader.database.dateOfLatestUnitFor(filePath: $0) },
-                modificationDate: Self.modificationDate)
+                coverage: coverage,
+                unitDate: { reader.database.dateOfLatestUnitFor(filePath: $0) },
+                modificationDate: Self.modificationDate
+            )
         }
 
         /// A file's modification time, nil when it cannot be read.
@@ -56,7 +58,10 @@
         /// Resolves `path` (``IndexStoreLocation/resolve(_:)``), opens it with its database under `cacheRoot` using the
         /// trusted `libIndexStore` at `library`, and classifies `analyzedFiles` against it.
         public static func open(
-            _ path: String, cacheRoot: String, library: String, analyzedFiles: [String]
+            _ path: String,
+            cacheRoot: String,
+            library: String,
+            analyzedFiles: [String]
         ) -> Outcome {
             let store: String
             switch IndexStoreLocation.resolve(path) {
@@ -72,18 +77,28 @@
             do {
                 try FileManager.default.createDirectory(atPath: databaseDirectory, withIntermediateDirectories: true)
                 database = try IndexStoreDB(
-                    storePath: store, databasePath: databaseDirectory,
-                    library: IndexStoreLibrary(dylibPath: trust.path), waitUntilDoneInitializing: true)
+                    storePath: store,
+                    databasePath: databaseDirectory,
+                    library: IndexStoreLibrary(dylibPath: trust.path),
+                    waitUntilDoneInitializing: true
+                )
             } catch {
                 return .failed(reason: "the index store at \(store) could not be opened: \(error)")
             }
             let coverage = IndexCoverage.classify(
-                analyzedFiles, unitDate: { database.dateOfLatestUnitFor(filePath: $0) },
-                modificationDate: modificationDate)
+                analyzedFiles,
+                unitDate: { database.dateOfLatestUnitFor(filePath: $0) },
+                modificationDate: modificationDate
+            )
             guard coverage.isUsable else { return .notUsable(store: store, coverage: coverage) }
             return .usable(
                 IndexStoreSession(
-                    store: store, databaseDirectory: databaseDirectory, database: database, coverage: coverage))
+                    store: store,
+                    databaseDirectory: databaseDirectory,
+                    database: database,
+                    coverage: coverage
+                )
+            )
         }
     }
 

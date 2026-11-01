@@ -100,11 +100,17 @@ import Testing
             try t.link("alias", to: "dd")
             let cache = t.root + "/cache"
             let direct = IndexStoreLocation.databaseDirectory(
-                forStore: t.root + "/dd/Index.noindex/DataStore", cacheRoot: cache)
+                forStore: t.root + "/dd/Index.noindex/DataStore",
+                cacheRoot: cache
+            )
             let viaLink = IndexStoreLocation.databaseDirectory(
-                forStore: t.root + "/alias/Index.noindex/DataStore", cacheRoot: cache)
+                forStore: t.root + "/alias/Index.noindex/DataStore",
+                cacheRoot: cache
+            )
             let other = IndexStoreLocation.databaseDirectory(
-                forStore: t.root + "/other/Index.noindex/DataStore", cacheRoot: cache)
+                forStore: t.root + "/other/Index.noindex/DataStore",
+                cacheRoot: cache
+            )
             #expect(direct.hasPrefix(cache + "/index/"))
             #expect(direct == viaLink)
             #expect(direct != other)
@@ -122,16 +128,21 @@ import Testing
 
             try t.store("DerivedData/App-abc/Index.noindex/DataStore")
             let plist = try PropertyListSerialization.data(
-                fromPropertyList: ["WorkspacePath": t.root + "/app/App.xcodeproj"], format: .binary, options: 0)
+                fromPropertyList: ["WorkspacePath": t.root + "/app/App.xcodeproj"],
+                format: .binary,
+                options: 0
+            )
             try plist.write(to: URL(fileURLWithPath: derivedData + "/App-abc/info.plist"))
             #expect(
                 IndexStoreLocation.discover(layout: layout, derivedDataRoots: [derivedData])
-                    == t.root + "/DerivedData/App-abc/Index.noindex/DataStore")
+                    == t.root + "/DerivedData/App-abc/Index.noindex/DataStore"
+            )
 
             try t.store("app/.build/arm64-apple-macosx/debug/index/store")
             #expect(
                 IndexStoreLocation.discover(layout: layout, derivedDataRoots: [derivedData])
-                    == t.root + "/app/.build/arm64-apple-macosx/debug/index/store")
+                    == t.root + "/app/.build/arm64-apple-macosx/debug/index/store"
+            )
         }
     }
 }

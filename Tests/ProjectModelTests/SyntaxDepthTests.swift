@@ -18,7 +18,8 @@ struct SyntaxDepthTests {
     @Test func `ordinary code and a long but written chain are not`() {
         let chain = SyntaxDepth.exceeds(Self.chain(200))
         let nested = SyntaxDepth.exceeds(
-            Parser.parse(source: "struct S {\n func f() { if a { for x in y { g(x) } } }\n}\n"))
+            Parser.parse(source: "struct S {\n func f() { if a { for x in y { g(x) } } }\n}\n")
+        )
         #expect(!chain && !nested)
     }
 

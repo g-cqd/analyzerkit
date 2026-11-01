@@ -28,14 +28,16 @@ import Testing
             struct SampleView_Previews: PreviewProvider {
                 static var previews: some View { SampleView() }
             }
-            """)
+            """
+        )
 
         #expect(
             found == [
                 RegionSpan(startLine: 3, endLine: 4, region: .debugOnly),
                 RegionSpan(startLine: 9, endLine: 11, region: .preview),
                 RegionSpan(startLine: 13, endLine: 15, region: .preview),
-            ])
+            ]
+        )
     }
 
     @Test func `a line's region is the union of the spans holding it`() {
@@ -46,7 +48,8 @@ import Testing
                 SampleView()
             }
             #endif
-            """)
+            """
+        )
 
         #expect(RegionSpan.region(atLine: 3, in: found) == [.debugOnly, .preview])
         #expect(RegionSpan.region(atLine: 6, in: found) == .production)

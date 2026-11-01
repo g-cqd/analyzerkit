@@ -25,7 +25,8 @@ import Testing
 
     @Test func `canonicalizing keeps first seen order and drops repeats`() {
         #expect(
-            SourcePath.canonicalized(["/b/B.swift", "/a/A.swift", "/b/./B.swift"]) == ["/b/B.swift", "/a/A.swift"])
+            SourcePath.canonicalized(["/b/B.swift", "/a/A.swift", "/b/./B.swift"]) == ["/b/B.swift", "/a/A.swift"]
+        )
     }
 
     /// A corpus is thousands of files in hundreds of directories: one full resolution per directory, not per file (the

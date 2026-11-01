@@ -27,7 +27,8 @@ import Testing
 
                 // Generated using SwiftGen elsewhere; this file is hand-written.
                 struct SampleModel {}
-                """)
+                """
+        )
 
         #expect(!GeneratedCode.isGenerated(path: "Sources/Sample/SampleModel.swift", tree: tree))
         #expect(!GeneratedCode.isGenerated(path: "Sources/Sample/GeneratedReport.swift", header: ""))

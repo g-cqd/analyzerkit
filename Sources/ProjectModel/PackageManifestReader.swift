@@ -57,7 +57,12 @@ enum PackageManifestReader {
             kinds.contains(member.declName.baseName.text)
         else { return .failure(Reason(text: "a target is not a `.target(…)`-style call")) }
         var target = DeclaredPackageTarget(
-            name: "", kind: member.declName.baseName.text, path: nil, sources: nil, exclude: [])
+            name: "",
+            kind: member.declName.baseName.text,
+            path: nil,
+            sources: nil,
+            exclude: []
+        )
         for argument in call.arguments {
             switch argument.label?.text {
             case "name":
@@ -68,13 +73,15 @@ enum PackageManifestReader {
             case "path":
                 guard let path = literal(argument.expression) else {
                     return .failure(
-                        Reason(text: "the path of \(target.name.isEmpty ? "a target" : target.name) is not a literal"))
+                        Reason(text: "the path of \(target.name.isEmpty ? "a target" : target.name) is not a literal")
+                    )
                 }
                 target.path = path
             case "sources", "exclude":
                 guard let list = literals(argument.expression) else {
                     return .failure(
-                        Reason(text: "the \(argument.label?.text ?? "") of \(target.name) is not a literal list"))
+                        Reason(text: "the \(argument.label?.text ?? "") of \(target.name) is not a literal list")
+                    )
                 }
                 if argument.label?.text == "sources" { target.sources = list } else { target.exclude = list }
             default: continue
