@@ -80,7 +80,8 @@ enum DocumentationLayout {
                 }
                 if !successorFields["supersedes", default: ""].contains("ADR-\(number)") {
                     problems.append(
-                        "\(record.name): superseded by \(successor), which does not name it in `supersedes:`")
+                        "\(record.name): superseded by \(successor), which does not name it in `supersedes:`"
+                    )
                 }
             case let other:
                 problems.append("\(record.name): status is \(other ?? "missing"), not accepted or superseded")
@@ -99,7 +100,8 @@ enum DocumentationLayout {
             if let problem = dateProblem(entry.name, fields) { problems.append(problem) }
             guard let status = fields["status"], roadmapStatuses.contains(status) else {
                 problems.append(
-                    "\(entry.name): status is \(fields["status"] ?? "missing"), not not-started, in-progress or done")
+                    "\(entry.name): status is \(fields["status"] ?? "missing"), not not-started, in-progress or done"
+                )
                 continue
             }
             for blocker in fourDigitNumbers(in: fields["blocked-by", default: ""]) {
@@ -131,7 +133,10 @@ enum DocumentationLayout {
     /// research `<file>.md`. A reference qualified by a possessive (`its roadmap 0018`, `AemiProtobuf's roadmap 0015`,
     /// `ask's ADR-0128`) names another repository and is not checked.
     static func referenceProblems(
-        in documents: [(name: String, text: String)], adrs: Set<String>, roadmap: Set<String>, research: Set<String>
+        in documents: [(name: String, text: String)],
+        adrs: Set<String>,
+        roadmap: Set<String>,
+        research: Set<String>
     ) -> [String] {
         var problems: [String] = []
         for document in documents {
@@ -161,7 +166,9 @@ enum DocumentationLayout {
 
     /// Front matter by number; a name without a number, or a number used twice, is a problem.
     private static func numbered(
-        _ documents: [(name: String, text: String)], kind: String, problems: inout [String]
+        _ documents: [(name: String, text: String)],
+        kind: String,
+        problems: inout [String]
     ) -> [String: [String: String]] {
         var byNumber: [String: [String: String]] = [:]
         for document in documents {

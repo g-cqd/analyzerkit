@@ -119,8 +119,11 @@ extension ControlFlowGraph {
         #expect(g.lines(to: .fellOff) == [2, 7])
         #expect(
             g.path(
-                from: g.entry, to: g.nodes.first { $0.line == 7 }!.id,
-                allowing: { g.nodes[$0].line != 2 || $0 == head.id }) != nil)
+                from: g.entry,
+                to: g.nodes.first { $0.line == 7 }!.id,
+                allowing: { g.nodes[$0].line != 2 || $0 == head.id }
+            ) != nil
+        )
     }
 
     @Test func `break in a switch leaves the switch and not the loop around it`() throws {
@@ -144,7 +147,8 @@ extension ControlFlowGraph {
 
     @Test func `a labelled break leaves the outer loop`() throws {
         let g = graph(
-            "func f() {\n outer: for a in xs {\n  for b in ys {\n   break outer\n  }\n  inner()\n }\n done()\n}")
+            "func f() {\n outer: for a in xs {\n  for b in ys {\n   break outer\n  }\n  inner()\n }\n done()\n}"
+        )
         let breakNode = try #require(g.nodes.first { $0.line == 4 })
         let inner = try #require(g.nodes.first { $0.line == 6 })
         let done = try #require(g.nodes.first { $0.line == 8 })
@@ -223,14 +227,16 @@ extension ControlFlowGraph {
         let g = graph("func f(_ c: Bool) {\n let x = open()\n if c {\n  close(x)\n }\n}")
         // State: whether `x` is still open. Opened at line 2, closed at line 4.
         let states: [Bool?] = g.solve(
-            initial: false, join: { $0 || $1 },
+            initial: false,
+            join: { $0 || $1 },
             transfer: { node, _, state in
                 switch node.line {
                 case 2: true
                 case 4: false
                 default: state
                 }
-            })
+            }
+        )
         let exit = g.exit(.fellOff)!
         #expect(states[exit] == true, "the path that skips the close leaves it open")
     }

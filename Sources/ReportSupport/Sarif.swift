@@ -89,8 +89,14 @@ public enum Sarif {
         public let properties: [String: Property]?
 
         public init(
-            ruleId: String, level: String, message: Text, locations: [Location], relatedLocations: [Location]? = nil,
-            codeFlows: [CodeFlow]? = nil, partialFingerprints: [String: String], properties: [String: Property]? = nil
+            ruleId: String,
+            level: String,
+            message: Text,
+            locations: [Location],
+            relatedLocations: [Location]? = nil,
+            codeFlows: [CodeFlow]? = nil,
+            partialFingerprints: [String: String],
+            properties: [String: Property]? = nil
         ) {
             self.ruleId = ruleId
             self.level = level
@@ -112,8 +118,12 @@ public enum Sarif {
         public let properties: [String: Property]?
 
         public init(
-            id: String, shortDescription: Text, fullDescription: Text? = nil, help: Text? = nil,
-            defaultConfiguration: [String: String]? = nil, properties: [String: Property]? = nil
+            id: String,
+            shortDescription: Text,
+            fullDescription: Text? = nil,
+            help: Text? = nil,
+            defaultConfiguration: [String: String]? = nil,
+            properties: [String: Property]? = nil
         ) {
             self.id = id
             self.shortDescription = shortDescription

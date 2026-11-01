@@ -16,9 +16,12 @@ import Testing
 
     @Test func `the envelope adds its keys and keeps the tool's own, types included`() throws {
         let envelope = ReportEnvelope(
-            ToolReport(findings: ["a"], notes: ["deadwood: warning: kept as strings"]), tool: "deadwood",
-            version: "0.11.2", runNotes: [RunNote(code: "index", severity: "warning", message: "no store")],
-            skippedFiles: [SkippedFile(path: "Bad.swift", reason: .degraded)])
+            ToolReport(findings: ["a"], notes: ["deadwood: warning: kept as strings"]),
+            tool: "deadwood",
+            version: "0.11.2",
+            runNotes: [RunNote(code: "index", severity: "warning", message: "no store")],
+            skippedFiles: [SkippedFile(path: "Bad.swift", reason: .degraded)]
+        )
         let json = try Self.object(envelope)
         #expect(json["schemaVersion"] as? Int == 1)
         #expect(json["tool"] as? String == "deadwood")
@@ -38,7 +41,8 @@ import Testing
         #expect(bare["runNotes"] as? [Any] != nil && (bare["runNotes"] as? [Any])?.isEmpty == true)
         #expect((bare["skippedFiles"] as? [Any])?.isEmpty == true)
         let timed = try Self.object(
-            ReportEnvelope(ToolReport(findings: [], notes: []), tool: "t", version: "1", timings: ["scan": 0.5]))
+            ReportEnvelope(ToolReport(findings: [], notes: []), tool: "t", version: "1", timings: ["scan": 0.5])
+        )
         #expect(timed["timings"] as? [String: Double] == ["scan": 0.5])
     }
 

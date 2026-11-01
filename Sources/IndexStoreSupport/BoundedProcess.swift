@@ -55,7 +55,8 @@ public enum BoundedProcess {
 
     /// The allowed variables of `source`, then `overrides`.
     public static func scrubbedEnvironment(
-        overrides: [String: String] = [:], source: [String: String]
+        overrides: [String: String] = [:],
+        source: [String: String]
     ) -> [String: String] {
         var environment = source.filter { allowedEnvironmentKeys.contains($0.key) }
         for (key, value) in overrides { environment[key] = value }
@@ -66,8 +67,12 @@ public enum BoundedProcess {
     /// standard error keeps at most `outputLimit` bytes; the rest is read and dropped, so a child that writes a lot never
     /// blocks on a full pipe.
     public static func run(
-        _ executable: String, _ arguments: [String], directory: String? = nil, environment: [String: String],
-        timeout: Duration = .seconds(120), outputLimit: Int = 1 << 20
+        _ executable: String,
+        _ arguments: [String],
+        directory: String? = nil,
+        environment: [String: String],
+        timeout: Duration = .seconds(120),
+        outputLimit: Int = 1 << 20
     ) async throws(Failure) -> Result {
         guard executable.hasPrefix("/") else { throw .notAbsolute(executable) }
         guard !Task.isCancelled else { throw .cancelled(executable: executable) }
@@ -79,9 +84,12 @@ public enum BoundedProcess {
         var variables: [Environment.Key: String] = [:]
         for (key, value) in environment { variables[Environment.Key(stringLiteral: key)] = value }
         let configuration = Configuration(
-            executable: .path(FilePath(executable)), arguments: Arguments(arguments),
-            environment: .custom(variables), workingDirectory: directory.map { FilePath($0) },
-            platformOptions: options)
+            executable: .path(FilePath(executable)),
+            arguments: Arguments(arguments),
+            environment: .custom(variables),
+            workingDirectory: directory.map { FilePath($0) },
+            platformOptions: options
+        )
         let outcome: ExecutionResult<Collected, SequenceOutput, SequenceOutput>
         do {
             outcome = try await Subprocess.run(configuration, input: .none, output: .sequence, error: .sequence) {
@@ -103,9 +111,11 @@ public enum BoundedProcess {
             case .signaled(let signal): 128 + Int32(signal)
             }
         return Result(
-            exitStatus: status, standardOutput: outcome.closureResult.output,
+            exitStatus: status,
+            standardOutput: outcome.closureResult.output,
             standardError: outcome.closureResult.error,
-            outputTruncated: outcome.closureResult.truncated)
+            outputTruncated: outcome.closureResult.truncated
+        )
     }
 
     /// Both outputs, as far as the limit.
@@ -137,7 +147,9 @@ public enum BoundedProcess {
     /// Reads both outputs until they end, racing the deadline. On the deadline, or when the task is cancelled, the
     /// child's group is stopped here, while the child is not yet reaped and its process-group id cannot be reused.
     private static func collect(
-        _ execution: Execution<NoInput, SequenceOutput, SequenceOutput>, timeout: Duration, limit: Int
+        _ execution: Execution<NoInput, SequenceOutput, SequenceOutput>,
+        timeout: Duration,
+        limit: Int
     ) async throws -> Collected {
         let group = execution.processIdentifier.value
         let finished = Finished()

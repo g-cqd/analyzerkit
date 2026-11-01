@@ -15,17 +15,26 @@ import Testing
         Sarif.Location(
             physicalLocation: Sarif.PhysicalLocation(
                 artifactLocation: Sarif.ArtifactLocation(path: path, root: root),
-                region: Sarif.Region(startLine: line, startColumn: column)))
+                region: Sarif.Region(startLine: line, startColumn: column)
+            )
+        )
     }
 
     private static let driver = Sarif.Driver(
-        name: "t", version: "1", informationUri: "https://example.com",
-        rules: [Sarif.Rule(id: "r", shortDescription: Sarif.Text("s"), help: Sarif.Text("h"))])
+        name: "t",
+        version: "1",
+        informationUri: "https://example.com",
+        rules: [Sarif.Rule(id: "r", shortDescription: Sarif.Text("s"), help: Sarif.Text("h"))]
+    )
 
     @Test func `a minimal run omits every optional member`() throws {
         let result = Sarif.Result(
-            ruleId: "r", level: "warning", message: Sarif.Text("m"),
-            locations: [Self.location("/abs/A.swift", root: nil, line: 3, column: 5)], partialFingerprints: [:])
+            ruleId: "r",
+            level: "warning",
+            message: Sarif.Text("m"),
+            locations: [Self.location("/abs/A.swift", root: nil, line: 3, column: 5)],
+            partialFingerprints: [:]
+        )
         let log = Sarif.Log(runs: [
             Sarif.Run(tool: Sarif.Tool(driver: Self.driver), invocations: nil, root: nil, results: [result])
         ])
@@ -42,13 +51,19 @@ import Testing
     @Test func `a relative location names SRCROOT, and the run gives its absolute uri`() throws {
         let log = Sarif.Log(runs: [
             Sarif.Run(
-                tool: Sarif.Tool(driver: Self.driver), invocations: nil, root: "/repo",
+                tool: Sarif.Tool(driver: Self.driver),
+                invocations: nil,
+                root: "/repo",
                 results: [
                     Sarif.Result(
-                        ruleId: "r", level: "note", message: Sarif.Text("m"),
+                        ruleId: "r",
+                        level: "note",
+                        message: Sarif.Text("m"),
                         locations: [Self.location("Sources/A.swift", root: "/repo", line: 1, column: nil)],
-                        partialFingerprints: ["t/v1": "f"])
-                ])
+                        partialFingerprints: ["t/v1": "f"]
+                    )
+                ]
+            )
         ])
         let text = try Self.encoded(log)
         #expect(text.contains(#""artifactLocation":{"uri":"Sources\/A.swift","uriBaseId":"SRCROOT"}"#))
@@ -60,18 +75,32 @@ import Testing
     @Test func `related locations, code flows, messages and properties are written when given`() throws {
         let related = Sarif.Location(
             physicalLocation: Self.location("/a/B.swift", root: nil, line: 2, column: 1).physicalLocation,
-            message: Sarif.Text("duplicate region"))
+            message: Sarif.Text("duplicate region")
+        )
         let result = Sarif.Result(
-            ruleId: "r", level: "error", message: Sarif.Text("m"),
-            locations: [Self.location("/a/A.swift", root: nil, line: 1, column: 1)], relatedLocations: [related],
-            codeFlows: [], partialFingerprints: [:], properties: ["confidence": .string("high")])
+            ruleId: "r",
+            level: "error",
+            message: Sarif.Text("m"),
+            locations: [Self.location("/a/A.swift", root: nil, line: 1, column: 1)],
+            relatedLocations: [related],
+            codeFlows: [],
+            partialFingerprints: [:],
+            properties: ["confidence": .string("high")]
+        )
         let rule = Sarif.Rule(
-            id: "r", shortDescription: Sarif.Text("s"), fullDescription: Sarif.Text("f"),
-            defaultConfiguration: ["level": "warning"], properties: ["tags": .strings(["security"])])
+            id: "r",
+            shortDescription: Sarif.Text("s"),
+            fullDescription: Sarif.Text("f"),
+            defaultConfiguration: ["level": "warning"],
+            properties: ["tags": .strings(["security"])]
+        )
         let log = Sarif.Log(runs: [
             Sarif.Run(
                 tool: Sarif.Tool(driver: Sarif.Driver(name: "t", version: "1", informationUri: "u", rules: [rule])),
-                invocations: nil, root: nil, results: [result])
+                invocations: nil,
+                root: nil,
+                results: [result]
+            )
         ])
         let text = try Self.encoded(log)
         #expect(text.contains(#""codeFlows":[]"#))
@@ -95,6 +124,7 @@ import Testing
             failed.toolExecutionNotifications == [
                 Sarif.Notification(level: "error", message: Sarif.Text("f")),
                 Sarif.Notification(level: "warning", message: Sarif.Text("w")),
-            ])
+            ]
+        )
     }
 }

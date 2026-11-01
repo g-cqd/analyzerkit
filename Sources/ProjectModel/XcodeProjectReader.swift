@@ -57,7 +57,8 @@ enum XcodeProjectReader {
             let index = model.targets.count
             targetIndex[targetID] = index
             model.targets.append(
-                .init(name: target["name"]?.string ?? targetID, productType: target["productType"]?.string ?? ""))
+                .init(name: target["name"]?.string ?? targetID, productType: target["productType"]?.string ?? "")
+            )
             for folder in target["fileSystemSynchronizedGroups"]?.strings ?? [] {
                 foldersOwned[folder, default: []].append(index)
             }
@@ -104,7 +105,9 @@ enum XcodeProjectReader {
 
     /// A run-script phase's Swift outputs and the Swift files its script names.
     private static func record(
-        _ phase: [String: PlistValue], into model: inout XcodeProjectModel, projectDirectory: String
+        _ phase: [String: PlistValue],
+        into model: inout XcodeProjectModel,
+        projectDirectory: String
     ) {
         let name = phase["name"]?.string ?? "Run Script"
         for output in phase["outputPaths"]?.strings ?? [] {

@@ -156,7 +156,8 @@ import Testing
                     "BuildTools/Plugin.swift", "Danger/Rules.swift", "Sources/App/App.swift",
                     "Sources/App/Generated/Assets.swift", "Sources/App/Internal.swift", "Sources/App/MyPackage.swift",
                     "Sources/Kit/Deep/Mock2.swift", "Sources/Kit/Mock1.swift",
-                ])
+                ]
+            )
         }
     }
 }

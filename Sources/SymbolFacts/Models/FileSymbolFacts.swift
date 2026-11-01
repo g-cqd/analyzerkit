@@ -53,8 +53,13 @@ public struct FileSymbolFacts: Sendable, Hashable, Codable {
         let references = ReferenceCollector(file: file, converter: converter)
         references.walk(tree)
         return Self(
-            file: file, declarations: declarations.declarations, imports: declarations.imports,
-            references: references.references, scopes: declarations.tracker.tree.ordered,
-            stringLiteralTokens: references.stringLiteralTokens, commentTokens: references.commentTokens)
+            file: file,
+            declarations: declarations.declarations,
+            imports: declarations.imports,
+            references: references.references,
+            scopes: declarations.tracker.tree.ordered,
+            stringLiteralTokens: references.stringLiteralTokens,
+            commentTokens: references.commentTokens
+        )
     }
 }

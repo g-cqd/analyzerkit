@@ -152,7 +152,10 @@ public enum ToolchainResolution {
         func success(_ library: String) -> Outcome {
             let server = sourceKitLSP(besideLibrary: library)
             return Outcome(
-                libraryPath: library, diagnostics: diagnostics + [server.diagnostic], sourceKitLSPPath: server.path)
+                libraryPath: library,
+                diagnostics: diagnostics + [server.diagnostic],
+                sourceKitLSPPath: server.path
+            )
         }
         if let override = environment["DEVELOPER_DIR"], !override.isEmpty,
             let library = developer(override, source: "DEVELOPER_DIR")
@@ -206,7 +209,12 @@ public enum ToolchainResolution {
             for key in ["HOME", "DEVELOPER_DIR"] { safe[key] = environment[key] }
             guard
                 let result = try? await BoundedProcess.run(
-                    executable, arguments, environment: safe, timeout: .seconds(10), outputLimit: 4096),
+                    executable,
+                    arguments,
+                    environment: safe,
+                    timeout: .seconds(10),
+                    outputLimit: 4096
+                ),
                 result.succeeded, !result.outputTruncated
             else { return nil }
             return result.standardOutputText

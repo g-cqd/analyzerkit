@@ -55,32 +55,43 @@ extension FileSymbolFacts: AemiProtoFastEncodable, AemiProtoFastDecodable {
                 declarations.append(
                     try reader.readMessage { reader throws(WireError) in
                         try SymbolFactsWire.readDeclaration(&reader, file: known)
-                    })
+                    }
+                )
             case 3:
                 imports.append(
                     try reader.readMessage { reader throws(WireError) in
                         try SymbolFactsWire.readDeclaration(&reader, file: known)
-                    })
+                    }
+                )
             case 4:
                 references.append(
                     try reader.readMessage { reader throws(WireError) in
                         try SymbolFactsWire.readReference(&reader, file: known)
-                    })
+                    }
+                )
             case 5:
                 scopes.append(
                     try reader.readMessage { reader throws(WireError) in
                         try SymbolFactsWire.readScope(&reader, file: known)
-                    })
+                    }
+                )
             case 6:
                 strings.insert(
-                    try reader.readMessage { reader throws(WireError) in try SymbolFactsWire.readTokenLine(&reader) })
+                    try reader.readMessage { reader throws(WireError) in try SymbolFactsWire.readTokenLine(&reader) }
+                )
             case 7: comments.insert(try reader.readString())
             default: try reader.skipField(tag)
             }
         }
         return Self(
-            file: file, declarations: declarations, imports: imports, references: references, scopes: scopes,
-            stringLiteralTokens: strings, commentTokens: comments)
+            file: file,
+            declarations: declarations,
+            imports: imports,
+            references: references,
+            scopes: scopes,
+            stringLiteralTokens: strings,
+            commentTokens: comments
+        )
     }
 }
 
@@ -114,7 +125,10 @@ public enum SymbolFactsWire {
     }
 
     private static func location(
-        _ field: FieldNumber, _ location: SymbolLocation, file: String, into writer: inout WireWriter
+        _ field: FieldNumber,
+        _ location: SymbolLocation,
+        file: String,
+        into writer: inout WireWriter
     ) throws(WireError) {
         try writer.appendMessage(field: field) { writer throws(WireError) in write(location, file: file, into: &writer)
         }
@@ -253,7 +267,8 @@ public enum SymbolFactsWire {
                             }
                         }
                         return PropertyWrapperInfo(kind: kind, attributeText: text, arguments: arguments)
-                    })
+                    }
+                )
             case 13:
                 swiftUI = try reader.readMessage { reader throws(WireError) in
                     var conformances: Set<SwiftUIConformance> = []
@@ -275,12 +290,23 @@ public enum SymbolFactsWire {
             }
         }
         return Declaration(
-            name: name, kind: kind, accessLevel: access,
-            modifiers: DeclarationModifiers(rawValue: UInt32(truncatingIfNeeded: modifiers)), location: location,
-            nameLocation: nameLocation, range: range, scope: ScopeID(scope), typeAnnotation: typeAnnotation,
+            name: name,
+            kind: kind,
+            accessLevel: access,
+            modifiers: DeclarationModifiers(rawValue: UInt32(truncatingIfNeeded: modifiers)),
+            location: location,
+            nameLocation: nameLocation,
+            range: range,
+            scope: ScopeID(scope),
+            typeAnnotation: typeAnnotation,
             genericParameters: generics,
-            signature: signature, documentation: documentation, propertyWrappers: wrappers, swiftUIInfo: swiftUI,
-            conformances: conformances, attributes: attributes)
+            signature: signature,
+            documentation: documentation,
+            propertyWrappers: wrappers,
+            swiftUIInfo: swiftUI,
+            conformances: conformances,
+            attributes: attributes
+        )
     }
 
     public static func write(_ signature: FunctionSignature, into writer: inout WireWriter) throws(WireError) {
@@ -329,9 +355,15 @@ public enum SymbolFactsWire {
                             }
                         }
                         return FunctionSignature.Parameter(
-                            label: label, name: name, type: type, hasDefaultValue: hasDefault, isVariadic: isVariadic,
-                            isInout: isInout)
-                    })
+                            label: label,
+                            name: name,
+                            type: type,
+                            hasDefaultValue: hasDefault,
+                            isVariadic: isVariadic,
+                            isInout: isInout
+                        )
+                    }
+                )
             case 2: returnType = try reader.readString()
             case 3: isAsync = try reader.readBool()
             case 4: isThrowing = try reader.readBool()
@@ -340,8 +372,12 @@ public enum SymbolFactsWire {
             }
         }
         return FunctionSignature(
-            parameters: parameters, returnType: returnType, isAsync: isAsync, isThrowing: isThrowing,
-            isRethrowing: isRethrowing)
+            parameters: parameters,
+            returnType: returnType,
+            isAsync: isAsync,
+            isThrowing: isThrowing,
+            isRethrowing: isRethrowing
+        )
     }
 
     // MARK: References
@@ -399,9 +435,15 @@ public enum SymbolFactsWire {
             }
         }
         return Reference(
-            identifier: identifier, location: SymbolLocation(file: path, line: line, column: column, offset: offset),
-            scope: scope, context: context, isQualified: isQualified ?? (qualifier != nil), qualifier: qualifier,
-            callLabels: hasLabels ? labels : nil, nameLocation: nameLocation)
+            identifier: identifier,
+            location: SymbolLocation(file: path, line: line, column: column, offset: offset),
+            scope: scope,
+            context: context,
+            isQualified: isQualified ?? (qualifier != nil),
+            qualifier: qualifier,
+            callLabels: hasLabels ? labels : nil,
+            nameLocation: nameLocation
+        )
     }
 
     // MARK: String-literal tokens

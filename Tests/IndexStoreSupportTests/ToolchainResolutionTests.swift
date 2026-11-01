@@ -9,11 +9,15 @@ import Testing
         func file(_ path: String, mode: Int = 0o644) throws -> String {
             let url = URL(fileURLWithPath: root + "/" + path)
             try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try Data().write(to: url)
             try FileManager.default.setAttributes([.posixPermissions: mode], ofItemAtPath: url.path)
             try FileManager.default.setAttributes(
-                [.posixPermissions: 0o755], ofItemAtPath: url.deletingLastPathComponent().path)
+                [.posixPermissions: 0o755],
+                ofItemAtPath: url.deletingLastPathComponent().path
+            )
             return url.path
         }
         func developer(_ name: String) throws -> String {
@@ -66,7 +70,8 @@ import Testing
             let expected = try f.developer("Other Xcode.app/Contents/Developer")
             var commands = 0
             let outcome = await ToolchainResolution.resolve(
-                environment: ["DEVELOPER_DIR": f.root + "/Other Xcode.app"], home: f.root
+                environment: ["DEVELOPER_DIR": f.root + "/Other Xcode.app"],
+                home: f.root
             ) { _, _, _ in
                 commands += 1; return nil
             }
@@ -83,9 +88,12 @@ import Testing
             let selected = try f.developer("Selected")
             var calls: [String] = []
             let outcome = await ToolchainResolution.resolve(
-                environment: ["DEVELOPER_DIR": f.root + "/Rejected"], home: f.root
+                environment: ["DEVELOPER_DIR": f.root + "/Rejected"],
+                home: f.root
             ) {
-                executable, args, env in
+                executable,
+                args,
+                env in
                 calls.append(executable)
                 #expect(executable == "/usr/bin/xcode-select")
                 #expect(args == ["-p"])
@@ -106,7 +114,8 @@ import Testing
             let outcome = await ToolchainResolution.resolve(
                 environment: [
                     "DEVELOPER_DIR": "/missing", "DYLD_INSERT_LIBRARIES": "evil", "PATH": "/evil", "HOME": f.root,
-                ], home: f.root
+                ],
+                home: f.root
             ) { executable, args, env in
                 calls.append(executable)
                 #expect(env["DYLD_INSERT_LIBRARIES"] == nil)
@@ -129,7 +138,8 @@ import Testing
             #expect(outcome.libraryPath == z)
             try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: z)
             #expect(
-                await ToolchainResolution.resolve(environment: [:], home: f.root) { _, _, _ in nil }.libraryPath == a)
+                await ToolchainResolution.resolve(environment: [:], home: f.root) { _, _, _ in nil }.libraryPath == a
+            )
             // CLT is intentionally last; its machine-specific existence is covered by the candidate-order seam below.
         }
     }
@@ -145,7 +155,9 @@ import Testing
             let clt = try f.file("CLT/usr/lib/libIndexStore.dylib")
             let resolve = {
                 await ToolchainResolution.resolve(environment: [:], home: f.root, commandLineTools: f.root + "/CLT") {
-                    _, _, _ in nil
+                    _,
+                    _,
+                    _ in nil
                 }
             }
             #expect(await resolve().libraryPath == clt)
@@ -169,7 +181,8 @@ import Testing
             #expect(!BinaryTrustChecker.isTrusted(at: f.root))
             #expect(await ToolchainResolution.systemProbe("/bin/echo", ["injected"], [:]) == nil)
             let failed = await ToolchainResolution.resolve(
-                environment: ["DEVELOPER_DIR": "relative"], home: f.root,
+                environment: ["DEVELOPER_DIR": "relative"],
+                home: f.root,
                 commandLineTools: f.root + "/CLT"
             ) { _, _, _ in "relative/swift" }
             #expect(failed.libraryPath == nil)

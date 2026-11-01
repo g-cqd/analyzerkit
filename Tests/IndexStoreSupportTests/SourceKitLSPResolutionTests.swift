@@ -12,11 +12,15 @@ import Testing
         func file(_ path: String, mode: Int) throws -> String {
             let url = URL(fileURLWithPath: root + "/" + path)
             try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
             try Data().write(to: url)
             try FileManager.default.setAttributes([.posixPermissions: mode], ofItemAtPath: url.path)
             try FileManager.default.setAttributes(
-                [.posixPermissions: 0o755], ofItemAtPath: url.deletingLastPathComponent().path)
+                [.posixPermissions: 0o755],
+                ofItemAtPath: url.deletingLastPathComponent().path
+            )
             return url.path
         }
         var usr: String { "Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr" }
@@ -36,7 +40,8 @@ import Testing
             let server = try t.file(t.usr + "/bin/sourcekit-lsp", mode: 0o755)
             var commands = 0
             let outcome = await ToolchainResolution.resolve(
-                environment: ["DEVELOPER_DIR": t.root + "/Xcode.app"], home: t.root
+                environment: ["DEVELOPER_DIR": t.root + "/Xcode.app"],
+                home: t.root
             ) { _, _, _ in
                 commands += 1
                 return nil
@@ -51,7 +56,8 @@ import Testing
         try await toolchain { t in
             let library = try t.file(t.usr + "/lib/libIndexStore.dylib", mode: 0o644)
             let outcome = await ToolchainResolution.resolve(
-                environment: ["DEVELOPER_DIR": t.root + "/Xcode.app"], home: t.root
+                environment: ["DEVELOPER_DIR": t.root + "/Xcode.app"],
+                home: t.root
             ) { _, _, _ in nil }
             #expect(outcome.libraryPath == library)
             #expect(outcome.sourceKitLSPPath == nil)
@@ -66,7 +72,8 @@ import Testing
             for mode in [0o644, 0o775] {
                 try FileManager.default.setAttributes([.posixPermissions: mode], ofItemAtPath: server)
                 let outcome = await ToolchainResolution.resolve(
-                    environment: ["DEVELOPER_DIR": t.root + "/Xcode.app"], home: t.root
+                    environment: ["DEVELOPER_DIR": t.root + "/Xcode.app"],
+                    home: t.root
                 ) { _, _, _ in nil }
                 #expect(outcome.sourceKitLSPPath == nil, "mode \(String(mode, radix: 8))")
             }
@@ -79,7 +86,9 @@ import Testing
             let server = try t.file("Custom.xctoolchain/usr/bin/sourcekit-lsp", mode: 0o755)
             var asked: [[String]] = []
             let outcome = await ToolchainResolution.resolve(environment: [:], home: t.root + "/nowhere") {
-                executable, arguments, _ in
+                executable,
+                arguments,
+                _ in
                 asked.append([executable] + arguments)
                 return executable == "/usr/bin/xcrun" ? t.root + "/Custom.xctoolchain/usr/bin/swift\n" : nil
             }

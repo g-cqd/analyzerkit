@@ -31,7 +31,9 @@ public enum RepositoryRoot {
     /// for every directory it passed, so a later path below any of them stops there.
     /// - Complexity: O(*d*) probes for the directories not yet in `known`.
     private static func detect(
-        from path: String, probing exists: (String) -> Bool, known: inout [String: String?]
+        from path: String,
+        probing exists: (String) -> Bool,
+        known: inout [String: String?]
     ) -> String? {
         var directory = URL(fileURLWithPath: path).standardized
         if directory.pathExtension == "swift" || !directory.hasDirectoryPath {

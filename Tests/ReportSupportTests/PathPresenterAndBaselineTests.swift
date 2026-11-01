@@ -16,7 +16,8 @@ import Testing
         let presenter = PathPresenter(root: "/repo")
         #expect(
             presenter.text("cycle: /repo/A.swift:3 → /repo/B.swift:4, see /other/C.swift")
-                == "cycle: A.swift:3 → B.swift:4, see /other/C.swift")
+                == "cycle: A.swift:3 → B.swift:4, see /other/C.swift"
+        )
         #expect(presenter.text("/repository/x") == "/repository/x")
     }
 }

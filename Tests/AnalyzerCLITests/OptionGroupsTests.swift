@@ -20,7 +20,8 @@ private struct Probe: ParsableCommand {
         let probe = try Probe.parse([])
         #expect(probe.input.paths == ["."] && probe.input.config == nil && probe.input.excludePaths.isEmpty)
         #expect(
-            probe.input.includeRegions == nil && probe.input.excludeRegions == nil && probe.input.deprecations.isEmpty)
+            probe.input.includeRegions == nil && probe.input.excludeRegions == nil && probe.input.deprecations.isEmpty
+        )
         #expect(probe.output.format == .xcode && !probe.output.strict && !probe.output.verbose && !probe.output.quiet)
         #expect(probe.rules.rules == nil)
         #expect(probe.cache.cachePath == nil && !probe.cache.noCache)
@@ -55,11 +56,13 @@ private struct Probe: ParsableCommand {
             regions.input.deprecations == [
                 Deprecation(old: "--include", new: "--include-regions"),
                 Deprecation(old: "--exclude", new: "--exclude-regions"),
-            ])
+            ]
+        )
         let tests = try Probe.parse(["--include-tests"])
         #expect(tests.input.includeRegions == "test,generated")
         #expect(
-            tests.input.deprecations == [Deprecation(old: "--include-tests", new: "--include-regions test,generated")])
+            tests.input.deprecations == [Deprecation(old: "--include-tests", new: "--include-regions test,generated")]
+        )
         let both = try Probe.parse(["--include-regions", "preview", "--include-tests"])
         #expect(both.input.includeRegions == "preview,test,generated")
         let rank = try Probe.parse(["--experimental-embedding-rank"])
@@ -67,12 +70,14 @@ private struct Probe: ParsableCommand {
         #expect(
             rank.experimental.deprecations == [
                 Deprecation(old: "--experimental-embedding-rank", new: "--experimental-embeddings rank")
-            ])
+            ]
+        )
         let confidence = try Probe.parse(["--experimental-embedding-confidence"])
         #expect(confidence.experimental.embeddings == .confidence)
         #expect(
             Deprecation(old: "--include", new: "--include-regions").message(tool: "dolly")
-                == "dolly: note: --include is deprecated; use --include-regions")
+                == "dolly: note: --include is deprecated; use --include-regions"
+        )
     }
 
     @Test func `contradictions are usage errors`() {

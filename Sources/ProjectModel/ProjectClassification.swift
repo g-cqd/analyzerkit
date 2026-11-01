@@ -144,7 +144,9 @@ public struct ProjectClassification: Sendable {
                 packages[directory] = Package(manifest: manifest, targets: nil)
             case .targets(let declared):
                 packages[directory] = Package(
-                    manifest: manifest, targets: declared.compactMap { resolve($0, in: directory, manifest: manifest) })
+                    manifest: manifest,
+                    targets: declared.compactMap { resolve($0, in: directory, manifest: manifest) }
+                )
             }
         }
         var projects: [Project] = []
@@ -162,8 +164,11 @@ public struct ProjectClassification: Sendable {
             case .project(let model):
                 let targets = model.targets.map {
                     ProjectTarget(
-                        name: $0.name, kind: $0.productType,
-                        isTest: XcodeProjectReader.testProductTypes.contains($0.productType), container: container)
+                        name: $0.name,
+                        kind: $0.productType,
+                        isTest: XcodeProjectReader.testProductTypes.contains($0.productType),
+                        container: container
+                    )
                 }
                 projects.append(Project(container: container, directory: directory, model: model, targets: targets))
             }
@@ -190,10 +195,17 @@ public struct ProjectClassification: Sendable {
             root = candidates.first { FileManager.default.fileExists(atPath: $0) } ?? candidates[0]
         }
         let target = ProjectTarget(
-            name: declared.name, kind: declared.kind, isTest: declared.kind == "testTarget", container: manifest)
+            name: declared.name,
+            kind: declared.kind,
+            isTest: declared.kind == "testTarget",
+            container: manifest
+        )
         return ResolvedTarget(
-            target: target, root: root, sources: declared.sources.map { $0.map { ProjectPaths.join(root, $0) } },
-            exclude: declared.exclude.map { ProjectPaths.join(root, $0) })
+            target: target,
+            root: root,
+            sources: declared.sources.map { $0.map { ProjectPaths.join(root, $0) } },
+            exclude: declared.exclude.map { ProjectPaths.join(root, $0) }
+        )
     }
 
     /// The region of the file at `path` (canonical) from the project, or from path conventions when no project claims
@@ -207,7 +219,9 @@ public struct ProjectClassification: Sendable {
         for project in projects {
             if let phase = project.model?.scripts[path] {
                 return FileClassification(
-                    region: .script, provenance: .runScript(phase: phase, container: project.container))
+                    region: .script,
+                    provenance: .runScript(phase: phase, container: project.container)
+                )
             }
         }
         var targets: Set<ProjectTarget> = []
@@ -244,7 +258,9 @@ public struct ProjectClassification: Sendable {
         }
         if let output {
             return FileClassification(
-                region: region, provenance: .buildOutput(phase: output.phase, container: output.container))
+                region: region,
+                provenance: .buildOutput(phase: output.phase, container: output.container)
+            )
         }
         if TestConventions.isTestPath(path) { region.insert(.test) }
         let reason: ConventionReason = unknown.map { .unknownProject($0) } ?? (enclosed ? .unclaimed : .noProject)
@@ -294,7 +310,9 @@ public struct ProjectClassification: Sendable {
                     message:
                         "\(unknown.count) file(s) are in a project that cannot be read without running it (\(projects)); "
                         + "path conventions classified them",
-                    paths: unknown.sorted()))
+                    paths: unknown.sorted()
+                )
+            )
         }
         if !unclaimed.isEmpty {
             issues.append(
@@ -302,7 +320,9 @@ public struct ProjectClassification: Sendable {
                     code: "project-unclaimed",
                     message:
                         "\(unclaimed.count) file(s) are in a project but no target compiles them; path conventions classified them",
-                    paths: unclaimed.sorted()))
+                    paths: unclaimed.sorted()
+                )
+            )
         }
         return issues
     }

@@ -41,7 +41,10 @@ extension IndexCoverage {
         let files = (0..<10).map { "/p/F\($0).swift" }
         let probe = Probe(files: files, modified: Date(timeIntervalSince1970: 500))
         let freshness = IndexFreshness(
-            coverage: IndexCoverage.none, unitDate: probe.unitDate, modificationDate: probe.modificationDate)
+            coverage: IndexCoverage.none,
+            unitDate: probe.unitDate,
+            modificationDate: probe.modificationDate
+        )
         for round in 0..<100 {
             for file in files { #expect(freshness.isCurrent(file), "round \(round)") }
         }
@@ -51,13 +54,18 @@ extension IndexCoverage {
 
     @Test func `the files classified when the store opened cost no lookup`() {
         let coverage = IndexCoverage.classify(
-            ["/p/A.swift", "/p/B.swift"], unitDate: { _ in Date(timeIntervalSince1970: 1_000) },
+            ["/p/A.swift", "/p/B.swift"],
+            unitDate: { _ in Date(timeIntervalSince1970: 1_000) },
             modificationDate: {
                 $0.hasSuffix("A.swift") ? Date(timeIntervalSince1970: 500) : Date(timeIntervalSince1970: 2_000)
-            })
+            }
+        )
         let probe = Probe(files: [], modified: Date())
         let freshness = IndexFreshness(
-            coverage: coverage, unitDate: probe.unitDate, modificationDate: probe.modificationDate)
+            coverage: coverage,
+            unitDate: probe.unitDate,
+            modificationDate: probe.modificationDate
+        )
         #expect(freshness.isCurrent("/p/A.swift"))
         #expect(!freshness.isCurrent("/p/B.swift"))
         #expect(probe.units.withLock { $0 } == 0)
@@ -67,7 +75,10 @@ extension IndexCoverage {
     @Test func `a file with no unit, changed after its unit or unreadable is not current`() {
         let probe = Probe(files: ["/p/New.swift"], modified: Date(timeIntervalSince1970: 2_000))
         let freshness = IndexFreshness(
-            coverage: IndexCoverage.none, unitDate: probe.unitDate, modificationDate: probe.modificationDate)
+            coverage: IndexCoverage.none,
+            unitDate: probe.unitDate,
+            modificationDate: probe.modificationDate
+        )
         #expect(!freshness.isCurrent("/missing/A.swift"))
         #expect(!freshness.isCurrent("/p/New.swift"))
         #expect(!freshness.isCurrent("/p/Gone.swift"))
@@ -77,12 +88,18 @@ extension IndexCoverage {
     @Test func `an answer holds for the session and a new one sees the change`() {
         let probe = Probe(files: ["/p/A.swift"], modified: Date(timeIntervalSince1970: 500))
         let first = IndexFreshness(
-            coverage: IndexCoverage.none, unitDate: probe.unitDate, modificationDate: probe.modificationDate)
+            coverage: IndexCoverage.none,
+            unitDate: probe.unitDate,
+            modificationDate: probe.modificationDate
+        )
         #expect(first.isCurrent("/p/A.swift"))
         probe.modified.withLock { $0["/p/A.swift"] = Date(timeIntervalSince1970: 2_000) }
         #expect(first.isCurrent("/p/A.swift"))
         let second = IndexFreshness(
-            coverage: IndexCoverage.none, unitDate: probe.unitDate, modificationDate: probe.modificationDate)
+            coverage: IndexCoverage.none,
+            unitDate: probe.unitDate,
+            modificationDate: probe.modificationDate
+        )
         #expect(!second.isCurrent("/p/A.swift"))
     }
 
@@ -90,7 +107,10 @@ extension IndexCoverage {
         let files = (0..<50).map { "/p/F\($0).swift" }
         let probe = Probe(files: files, modified: Date(timeIntervalSince1970: 500))
         let freshness = IndexFreshness(
-            coverage: IndexCoverage.none, unitDate: probe.unitDate, modificationDate: probe.modificationDate)
+            coverage: IndexCoverage.none,
+            unitDate: probe.unitDate,
+            modificationDate: probe.modificationDate
+        )
         let answers = await withTaskGroup(of: Bool.self, returning: [Bool].self) { group in
             for index in 0..<1_000 { group.addTask { freshness.isCurrent(files[index % files.count]) } }
             return await group.reduce(into: []) { $0.append($1) }

@@ -14,7 +14,10 @@ public enum NewSince {
     /// Moves each finding of `outOfScope` whose fingerprint is not in `baseline` to the reported findings.
     /// - Complexity: O(*n*) in the out-of-scope findings.
     public static func promote<Item>(
-        inScope: [Item], outOfScope: [Item], notIn baseline: Set<String>, fingerprint: (Item) -> String
+        inScope: [Item],
+        outOfScope: [Item],
+        notIn baseline: Set<String>,
+        fingerprint: (Item) -> String
     ) -> Promotion<Item> {
         var reported = inScope
         var kept: [Item] = []
@@ -34,7 +37,9 @@ public enum NewSince {
     /// Whether `baseline` holds none of the findings' fingerprints, so it may have been written for another corpus.
     /// False when either side is empty: an empty baseline or report cannot be a mismatch. Read before promoting.
     public static func matchesNothing<Item>(
-        _ findings: [Item], in baseline: Set<String>, fingerprint: (Item) -> String
+        _ findings: [Item],
+        in baseline: Set<String>,
+        fingerprint: (Item) -> String
     ) -> Bool {
         guard !baseline.isEmpty, !findings.isEmpty else { return false }
         return !findings.contains { baseline.contains(fingerprint($0)) }
@@ -48,7 +53,8 @@ public enum NewSince {
         if matchesNothing {
             notes.append(
                 "every out-of-scope finding is new since \(baseline); the baseline may not match this corpus "
-                    + "(check --relative-to and the analyzed paths)")
+                    + "(check --relative-to and the analyzed paths)"
+            )
         }
         return notes
     }

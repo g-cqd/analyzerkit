@@ -45,11 +45,14 @@ public enum LargeStack {
         #else
             var thread = pthread_t()
             let status = unsafe pthread_create(
-                &thread, &attributes,
+                &thread,
+                &attributes,
                 { context in
                     guard let context = unsafe context else { return nil }
                     return unsafe LargeStack.start(context)
-                }, context)
+                },
+                context
+            )
         #endif
         if status != 0 {
             unsafe Unmanaged<Job>.fromOpaque(context).release()

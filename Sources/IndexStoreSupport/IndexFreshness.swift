@@ -22,7 +22,8 @@ public final class IndexFreshness: Sendable {
     ///   - unitDate: the date of a file's latest unit, nil when it has none.
     ///   - modificationDate: a file's modification time, nil when it cannot be read.
     public init(
-        coverage: IndexCoverage, unitDate: @escaping @Sendable (String) -> Date?,
+        coverage: IndexCoverage,
+        unitDate: @escaping @Sendable (String) -> Date?,
         modificationDate: @escaping @Sendable (String) -> Date?
     ) {
         self.unitDate = unitDate

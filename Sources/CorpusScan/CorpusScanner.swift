@@ -29,7 +29,12 @@ public struct ScannedFile<Facts: Sendable>: Sendable {
     public let bytes: [UInt8]?
 
     init(
-        path: String, facts: Facts?, fingerprint: String?, cacheHit: Bool, failure: String?, bytes: [UInt8]? = nil
+        path: String,
+        facts: Facts?,
+        fingerprint: String?,
+        cacheHit: Bool,
+        failure: String?,
+        bytes: [UInt8]? = nil
     ) {
         self.path = path
         self.facts = facts
@@ -86,8 +91,15 @@ public enum CorpusScanner {
         extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
     ) async throws -> CorpusScan<Facts> {
         try await scan(
-            paths: paths, cache: cache, identity: identity, salt: salt, width: width, keepingBytes: keepingBytes,
-            codec: .json, extract: extract)
+            paths: paths,
+            cache: cache,
+            identity: identity,
+            salt: salt,
+            width: width,
+            keepingBytes: keepingBytes,
+            codec: .json,
+            extract: extract
+        )
     }
 
     /// ``scan(paths:cache:identity:salt:width:keepingBytes:extract:)`` for facts with AemiProtobuf's fast path: payloads
@@ -103,8 +115,15 @@ public enum CorpusScanner {
         extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
     ) async throws -> CorpusScan<Facts> {
         try await scan(
-            paths: paths, cache: cache, identity: identity, salt: salt + PayloadCodec<Facts>.protobufSalt,
-            width: width, keepingBytes: keepingBytes, codec: .protobuf, extract: extract)
+            paths: paths,
+            cache: cache,
+            identity: identity,
+            salt: salt + PayloadCodec<Facts>.protobufSalt,
+            width: width,
+            keepingBytes: keepingBytes,
+            codec: .protobuf,
+            extract: extract
+        )
     }
 
     /// The protobuf path for facts that are `Codable` too: the protobuf payload wins.
@@ -118,8 +137,15 @@ public enum CorpusScanner {
         extract: @escaping @Sendable (_ path: String, _ bytes: [UInt8]) -> Facts
     ) async throws -> CorpusScan<Facts> {
         try await scan(
-            paths: paths, cache: cache, identity: identity, salt: salt + PayloadCodec<Facts>.protobufSalt,
-            width: width, keepingBytes: keepingBytes, codec: .protobuf, extract: extract)
+            paths: paths,
+            cache: cache,
+            identity: identity,
+            salt: salt + PayloadCodec<Facts>.protobufSalt,
+            width: width,
+            keepingBytes: keepingBytes,
+            codec: .protobuf,
+            extract: extract
+        )
     }
 
     private static func scan<Facts: Sendable>(
@@ -154,8 +180,13 @@ public enum CorpusScanner {
         let snapshot = shards
         let outcomes = try await mapConcurrently(canonical, limit: width) { path in
             await outcome(
-                for: path, shard: snapshot[FactsStore.shardIndex(of: path)], seed: seed, keepingBytes: keepingBytes,
-                codec: codec, extract: extract)
+                for: path,
+                shard: snapshot[FactsStore.shardIndex(of: path)],
+                seed: seed,
+                keepingBytes: keepingBytes,
+                codec: codec,
+                extract: extract
+            )
         }.sorted { $0.file.path < $1.file.path }
         try Task.checkCancellation()
 
@@ -170,9 +201,11 @@ public enum CorpusScanner {
         }
         let files = outcomes.map(\.file)
         return CorpusScan(
-            files: files, cacheHits: files.reduce(0) { $0 + ($1.cacheHit ? 1 : 0) },
+            files: files,
+            cacheHits: files.reduce(0) { $0 + ($1.cacheHit ? 1 : 0) },
             filesRead: outcomes.reduce(0) { $0 + ($1.read ? 1 : 0) },
-            cacheLoadFailure: notes.isEmpty ? nil : notes.joined(separator: "; "))
+            cacheLoadFailure: notes.isEmpty ? nil : notes.joined(separator: "; ")
+        )
     }
 
     /// One file's result, whether its bytes were read, and what its shard must record.
@@ -201,7 +234,9 @@ public enum CorpusScanner {
             let fingerprint = fingerprint(entry.contentHash, size: Int(key.size))
             return Outcome(
                 file: ScannedFile(path: path, facts: facts, fingerprint: fingerprint, cacheHit: true, failure: nil),
-                read: false, update: nil)
+                read: false,
+                update: nil
+            )
         }
         let bytes: [UInt8]
         do {
@@ -209,7 +244,9 @@ public enum CorpusScanner {
         } catch {
             return Outcome(
                 file: ScannedFile(path: path, facts: nil, fingerprint: nil, cacheHit: false, failure: "\(error)"),
-                read: true, update: nil)
+                read: true,
+                update: nil
+            )
         }
         let hash = XXH64.hash(bytes, seed: seed)
         let fingerprint = fingerprint(hash, size: bytes.count)
@@ -218,9 +255,16 @@ public enum CorpusScanner {
             let settled = key.map { StoredEntry(stat: $0, contentHash: hash, payload: entry.payload) }
             return Outcome(
                 file: ScannedFile(
-                    path: path, facts: facts, fingerprint: fingerprint, cacheHit: true, failure: nil,
-                    bytes: keepingBytes ? bytes : nil),
-                read: true, update: settled)
+                    path: path,
+                    facts: facts,
+                    fingerprint: fingerprint,
+                    cacheHit: true,
+                    failure: nil,
+                    bytes: keepingBytes ? bytes : nil
+                ),
+                read: true,
+                update: settled
+            )
         }
         // Extraction parses and walks a syntax tree, which recurses once per level; a cache hit does neither, so only
         // a miss pays for a thread with a large stack (roadmap 0041).
@@ -230,9 +274,16 @@ public enum CorpusScanner {
         }
         return Outcome(
             file: ScannedFile(
-                path: path, facts: facts, fingerprint: fingerprint, cacheHit: false, failure: nil,
-                bytes: keepingBytes ? bytes : nil),
-            read: true, update: update)
+                path: path,
+                facts: facts,
+                fingerprint: fingerprint,
+                cacheHit: false,
+                failure: nil,
+                bytes: keepingBytes ? bytes : nil
+            ),
+            read: true,
+            update: update
+        )
     }
 
     /// ``ContentFingerprint``'s spelling, from a hash already known.
@@ -243,8 +294,12 @@ public enum CorpusScanner {
     /// Applies the run's updates to its shards, prunes entries of files that are gone, writes the shards that changed,
     /// marks the workspace used, and holds the budget.
     private static func persist<Facts: Sendable>(
-        _ outcomes: [Outcome<Facts>], shards: [Int: Shard], location: CacheLocation, identity: CacheIdentity,
-        salt: UInt64, started: Int64
+        _ outcomes: [Outcome<Facts>],
+        shards: [Int: Shard],
+        location: CacheLocation,
+        identity: CacheIdentity,
+        salt: UInt64,
+        started: Int64
     ) {
         var scanned: Set<String> = []
         for outcome in outcomes {
@@ -267,7 +322,9 @@ public enum CorpusScanner {
             let record = directory + "/workspace"
             if !FileManager.default.fileExists(atPath: record) {
                 try? Data((SourcePath.canonical(location.workspace) + "\n").utf8).write(
-                    to: URL(fileURLWithPath: record), options: .atomic)
+                    to: URL(fileURLWithPath: record),
+                    options: .atomic
+                )
             }
         }
         for shard in dirty {
@@ -276,7 +333,9 @@ public enum CorpusScanner {
                 try? FileManager.default.removeItem(atPath: path)
             } else {
                 try? Data(shard.encoded(identity: identity, salt: salt, writtenAt: started)).write(
-                    to: URL(fileURLWithPath: path), options: .atomic)
+                    to: URL(fileURLWithPath: path),
+                    options: .atomic
+                )
             }
         }
         // The workspace's last use, for the budget's least-recently-used order.

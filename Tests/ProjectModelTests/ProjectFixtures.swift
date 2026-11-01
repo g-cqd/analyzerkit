@@ -72,7 +72,8 @@ struct XcodeFixture {
                 (
                     id, "PBXFileSystemSynchronizedBuildFileExceptionSet",
                     [("membershipExceptions", .list(exception.files)), ("target", .string(targetID(exception.target)))]
-                ))
+                )
+            )
             exceptionIDs.append(id)
         }
         let id = newID()
@@ -93,7 +94,8 @@ struct XcodeFixture {
                     ("lastKnownFileType", .string("sourcecode.swift")), ("path", .string(path)),
                     ("sourceTree", .string(sourceTree)),
                 ]
-            ))
+            )
+        )
         return id
     }
 
@@ -117,13 +119,18 @@ struct XcodeFixture {
                     ("buildActionMask", .string("2147483647")), ("inputPaths", .list(inputs)), ("name", .string(name)),
                     ("outputPaths", .list(outputs)), ("shellPath", .string("/bin/sh")), ("shellScript", .string(text)),
                 ]
-            ))
+            )
+        )
         return id
     }
 
     /// A native target with synchronized folders, explicitly listed sources (file reference ids) and extra phases.
     mutating func target(
-        _ name: String, type: String, folders: [String] = [], sources: [String] = [], phases: [String] = []
+        _ name: String,
+        type: String,
+        folders: [String] = [],
+        sources: [String] = [],
+        phases: [String] = []
     ) {
         var buildFiles: [String] = []
         for reference in sources {
@@ -136,7 +143,8 @@ struct XcodeFixture {
             (
                 sourcesPhase, "PBXSourcesBuildPhase",
                 [("buildActionMask", .string("2147483647")), ("files", .list(buildFiles))]
-            ))
+            )
+        )
         let id = targetID(name)
         var fields: [(String, Value)] = [
             ("buildPhases", .list(phases + [sourcesPhase])), ("name", .string(name)),
@@ -159,7 +167,8 @@ struct XcodeFixture {
                     ("compatibilityVersion", .string("Xcode 14.0")), ("mainGroup", .string(main)),
                     ("projectDirPath", .string("")), ("projectRoot", .string("")), ("targets", .list(targetList)),
                 ]
-            ))
+            )
+        )
         var text =
             "// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {\n\t};\n\tobjectVersion = 77;\n\tobjects = {\n"
         for object in objects.sorted(by: { $0.isa < $1.isa || ($0.isa == $1.isa && $0.id < $1.id) }) {

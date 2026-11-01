@@ -84,7 +84,10 @@ public struct LineIndex: Sendable {
         guard wide[line - 1] else { return length }
         var units = 0
         _ = transcode(
-            bytes[start..<start + length].makeIterator(), from: UTF8.self, to: UTF16.self, stoppingOnError: false
+            bytes[start..<start + length].makeIterator(),
+            from: UTF8.self,
+            to: UTF16.self,
+            stoppingOnError: false
         ) { _ in units += 1 }
         return units
     }

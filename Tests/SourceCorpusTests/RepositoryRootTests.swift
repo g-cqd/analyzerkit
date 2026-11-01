@@ -11,7 +11,9 @@ struct RepositoryRootTests {
             try scratch.write("\(path)/.git", "gitdir: /elsewhere\n")
         } else {
             try FileManager.default.createDirectory(
-                atPath: scratch.path("\(path)/.git"), withIntermediateDirectories: true)
+                atPath: scratch.path("\(path)/.git"),
+                withIntermediateDirectories: true
+            )
         }
     }
 

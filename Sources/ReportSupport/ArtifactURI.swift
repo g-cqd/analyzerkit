@@ -78,7 +78,8 @@ public enum ArtifactURI {
     /// is left out because in a relative reference's first segment it reads as a
     /// scheme; `;` because older URL parsers split parameters on it.
     private static let unescapedBytes = Set(
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&'()*+,=@/".utf8)
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&'()*+,=@/".utf8
+    )
 
     private static func isUnescaped(_ byte: UInt8) -> Bool {
         unescapedBytes.contains(byte)

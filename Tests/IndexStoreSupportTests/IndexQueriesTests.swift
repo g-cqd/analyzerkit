@@ -71,8 +71,11 @@
             let dylib = try #require(await library())
             guard
                 case .usable(let session) = IndexStoreSession.open(
-                    base + "/store", cacheRoot: base + "/cache", library: dylib,
-                    analyzedFiles: [store, use].map(SourcePath.canonical))
+                    base + "/store",
+                    cacheRoot: base + "/cache",
+                    library: dylib,
+                    analyzedFiles: [store, use].map(SourcePath.canonical)
+                )
             else {
                 Issue.record("the fixture store did not open")
                 return
@@ -107,7 +110,8 @@
         @Test func `the references of a USR come with their roles, in canonical paths`() async throws {
             try await fixture { queries, _, use in
                 let fetch = try #require(
-                    queries.occurrences(named: "fetch(id:)").first { $0.roles.contains(.definition) })
+                    queries.occurrences(named: "fetch(id:)").first { $0.roles.contains(.definition) }
+                )
                 let calls = queries.occurrences(ofUSR: fetch.usr, roles: [.call])
                 #expect(calls.map(\.file) == [use] && calls.map(\.line) == [4])
                 #expect(queries.hasOccurrences(ofUSR: fetch.usr, roles: [.reference]))
@@ -118,7 +122,8 @@
         @Test func `a member's containers come from childOf, outermost first`() async throws {
             try await fixture { queries, _, _ in
                 let fetch = try #require(
-                    queries.occurrences(named: "fetch(id:)").first { $0.roles.contains(.definition) })
+                    queries.occurrences(named: "fetch(id:)").first { $0.roles.contains(.definition) }
+                )
                 #expect(queries.containers(of: fetch) == ["Store"])
                 let type = try #require(queries.occurrences(named: "Store").first { $0.roles.contains(.definition) })
                 #expect(queries.containers(of: type).isEmpty)

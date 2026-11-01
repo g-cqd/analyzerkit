@@ -146,7 +146,11 @@
             var found: [Occurrence] = []
             var local = Spellings()
             database.forEachCanonicalSymbolOccurrence(
-                containing: name, anchorStart: anchorStart, anchorEnd: anchorEnd, subsequence: false, ignoreCase: false
+                containing: name,
+                anchorStart: anchorStart,
+                anchorEnd: anchorEnd,
+                subsequence: false,
+                ignoreCase: false
             ) { occurrence in
                 if keep(occurrence.symbol.name) { found.append(self.convert(occurrence, &local)) }
                 return true
