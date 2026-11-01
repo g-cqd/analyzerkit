@@ -68,6 +68,12 @@ public protocol ReportedDegradedFile: Sendable {
     var path: String { get }
     /// What the report says about it, such as `file skipped: not UTF-8`.
     var displayText: String { get }
+    /// Whether the whole file went unanalyzed, rather than part of its analysis; true by default.
+    var skippedWhole: Bool { get }
+}
+
+extension ReportedDegradedFile {
+    public var skippedWhole: Bool { true }
 }
 
 /// What the shared renderers read from a tool's whole-run report.
@@ -101,9 +107,10 @@ extension ToolReport {
     public var sarifWarnings: [String] { [] }
 
     /// True when every file the run was given was skipped, so it analyzed nothing. Such a report has no findings and must
-    /// not pass for a clean one.
+    /// not pass for a clean one. A file counts once however often it degraded, and not at all when only part of its
+    /// analysis was skipped.
     public var everyFileSkipped: Bool {
-        analyzedFileCount > 0 && degradedFiles.count >= analyzedFileCount
+        analyzedFileCount > 0 && Set(degradedFiles.lazy.filter(\.skippedWhole).map(\.path)).count >= analyzedFileCount
     }
 }
 
