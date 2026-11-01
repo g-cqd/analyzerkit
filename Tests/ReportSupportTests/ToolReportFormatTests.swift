@@ -21,6 +21,7 @@ import Testing
     private struct Degraded: ReportedDegradedFile {
         var path: String
         var displayText: String
+        var skippedWhole = true
     }
 
     private struct Report: ToolReport, Encodable {
@@ -206,6 +207,19 @@ import Testing
             let invocation = try #require((run["invocations"] as? [[String: Any]])?.first)
             #expect(invocation["executionSuccessful"] as? Bool == false)
         }
+    }
+
+    @Test func `only whole files skipped count towards a run that analyzed nothing, each path once`() {
+        var report = Report()
+        report.analyzedFileCount = 2
+        report.degradedFiles = [
+            Degraded(path: "/repo/A.swift", displayText: "x"), Degraded(path: "/repo/A.swift", displayText: "again"),
+        ]
+        #expect(!report.everyFileSkipped, "one file twice is not two files")
+        report.degradedFiles.append(Degraded(path: "/repo/B.swift", displayText: "part", skippedWhole: false))
+        #expect(!report.everyFileSkipped, "a file only partly analyzed is not skipped")
+        report.degradedFiles.append(Degraded(path: "/repo/B.swift", displayText: "all"))
+        #expect(report.everyFileSkipped)
     }
 
     @Test func `the output format names are the CLI's`() {
