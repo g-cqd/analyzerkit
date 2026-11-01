@@ -85,7 +85,7 @@ Wave 1, 2026-10-31:
   | arcleak | v0.15.0 | `daff058` | `1b7186d9…` | `9680abe8…` |
   | fcheck | v0.4.0 | `49bb882` | `ce39ff6b…` | `17b40071…` |
   | modeler | v0.4.0 | `f5b44d4` | `f59cadb9…` | `458d66a4…` |
-- **2026-11-01, a dependency release on analyzerkit `da8888d`.** The family's heads after the parenthesis change (aemi roadmap,
+- **2026-11-01, a dependency release on analyzerkit `da8888d`.** The family's heads after the parenthesis change (ask roadmap 0184,
   `lineBreakBeforeEachArgument`): aemi `0ef4279`, AemiRegex `bc59772`, AemiJSON `cbac433`, AemiProtobuf `7393728`. AemiJSON `cbac433` puts the
   element's position or the member's key before an error from its fast-path encodes (AemiJSON roadmap 0005). The tools' sources
   are only reformatted, so the findings are those of the previous release; each suite and `Scripts/lint-format.sh` passed locally
