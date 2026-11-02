@@ -38,7 +38,7 @@ let package = Package(
         // OrderedCollections for the shared configuration's merge; the range AemiJSON already resolves.
         .package(url: "https://github.com/apple/swift-collections.git", "1.7.1"..<"1.8.0"),
         // The byte kernels, POSIX file and bounded-concurrency primitives `SourceCorpus` is built on.
-        .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "6ed7fb775654e22197227e85d9d0a931cefc29ff"),
+        .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "7a8fe8ba6ec8d641cffa7e7a7a3152fee7e51619"),
         // The JSON coder behind the per-file facts cache.
         // Subprocess runs the toolchain probes and index builds (IndexStoreSupport's BoundedProcess): a child in a session of
         // its own, torn down with its descendants. Its Foundation trait is not needed. swift-system supplies `FilePath` off
@@ -54,9 +54,9 @@ let package = Package(
         // The wire format of the facts cache's shards (ADR-0011), pinned like AemiJSON to one revision on the same aemi.
         .package(
             url: "https://github.com/g-cqd/AemiProtobuf.git",
-            revision: "edede35c0ac8ec6eda12088308630e46c0e2eab9"
+            revision: "4b8a245d3807ccc85f4b8e9128893eb53da2b3a1"
         ),
-        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "25f59b943eaeaaea9a1ff6fdc36e06dd45a84900"),
+        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "3cd5a6aa8e0fd1e03573ee1df1e7fe7ffe488e08"),
     ],
     targets: [
         // The configuration every analyzer reads: one directory, the shared `.swift-analyzers.json` and the tool's own
@@ -158,6 +158,8 @@ let package = Package(
                 .product(name: "AemiFileSystem", package: "aemi"),
                 // TreeSnapshot's bounded parallel copy and hashing (ADR-0030).
                 .product(name: "AemiRuntime", package: "aemi"),
+                // TreeSnapshot's SHA-256 (aemi ADR 0029: CryptoKit on Apple platforms, swift-crypto elsewhere).
+                .product(name: "AemiDigest", package: "aemi"),
             ],
             swiftSettings: strictSwiftSettings
         ),
