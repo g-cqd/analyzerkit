@@ -131,8 +131,21 @@ public enum BoundedProcess {
         public var memoryLimitBytes: UInt64? = nil
         /// Called with each piece of output as it arrives, from the task reading it.
         public var outputObserver: (@Sendable (OutputChunk) -> Void)? = nil
+        /// The scheduling class of the child and what it starts.
+        public var priority = Priority.inherited
 
         public init() {}
+    }
+
+    /// How the system schedules a child. Darwin maps these to quality-of-service classes, which also choose between
+    /// performance and efficiency cores; elsewhere every value runs as ``inherited``.
+    public enum Priority: Sendable, Hashable {
+        /// The caller's own class (the default).
+        case inherited
+        /// Long-running work the user is not waiting on: still progresses under load.
+        case utility
+        /// Work that yields to everything else: a run on a machine someone is using. Slower, and its timings vary.
+        case background
     }
 
     /// The child, as the run's monitor sees it.
@@ -217,6 +230,13 @@ public enum BoundedProcess {
         guard !Task.isCancelled else { throw .cancelled(executable: executable) }
         var platform = PlatformOptions()
         platform.createSession = true
+        #if canImport(Darwin)
+            switch options.priority {
+            case .inherited: break
+            case .utility: platform.qualityOfService = .utility
+            case .background: platform.qualityOfService = .background
+            }
+        #endif
         platform.teardownSequence = [
             .gracefulShutDown(toProcessGroup: true, allowedDurationToNextStep: terminationGrace)
         ]
