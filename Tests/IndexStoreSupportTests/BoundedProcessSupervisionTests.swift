@@ -245,4 +245,18 @@ import Testing
             BoundedProcess.environment(.scrubbedAdding(["SECRET"]), source: source) == ["PATH": "/bin", "SECRET": "s"]
         )
     }
+
+    @Test func `a child runs at a lower priority when asked`() async throws {
+        for priority in [BoundedProcess.Priority.utility, .background] {
+            var options = BoundedProcess.Options()
+            options.priority = priority
+            let result = try await BoundedProcess.run(
+                "/bin/sh",
+                ["-c", "echo ok"],
+                environment: environment,
+                options: options
+            )
+            #expect(result.standardOutputText == "ok\n")
+        }
+    }
 }

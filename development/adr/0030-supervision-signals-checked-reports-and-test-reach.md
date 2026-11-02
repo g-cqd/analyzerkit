@@ -33,7 +33,9 @@ projects through `ProjectModel`. It recorded what it had to build around analyze
    `stop(reason:)`, recorded in `Result.stopReason`); `Result.terminationSignal`; sampled usage of the session
    (`Options.sampling`, `Result.usage`) and a memory limit (`Options.memoryLimitBytes`); an output observer; deadlines on
    the suspending clock by default (`Options.deadlineClock`); `EnvironmentPolicy` (`scrubbed`, `toolchain`,
-   `scrubbedAdding`).
+   `scrubbedAdding`); `Options.priority` (`utility`, `background`; Darwin quality of service). Measured on the shared M3
+   with a CPU-bound child of 1.1 to 1.7 s of CPU: inherited 1.7 to 3.5 s of wall time, background 3.9 to 27 s, the
+   most under load. A caller that judges deadlines must not judge them at `background`.
 3. **Waiting on swift-subprocess**: exact per-child usage is swiftlang/swift-subprocess#226 (open), which reports
    what the reaping call returns; until then usage is sampled (it misses the last interval), and the sampling stays the
    measure of the whole session afterwards. #371 (open, a stopped child read as exited on macOS 26/27) did not reproduce
