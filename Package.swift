@@ -38,7 +38,7 @@ let package = Package(
         // OrderedCollections for the shared configuration's merge; the range AemiJSON already resolves.
         .package(url: "https://github.com/apple/swift-collections.git", "1.7.1"..<"1.8.0"),
         // The byte kernels, POSIX file and bounded-concurrency primitives `SourceCorpus` is built on.
-        .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "921fd8d037855844e188b1b9e18a41773c7b9508"),
+        .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "6ed7fb775654e22197227e85d9d0a931cefc29ff"),
         // The JSON coder behind the per-file facts cache.
         // Subprocess runs the toolchain probes and index builds (IndexStoreSupport's BoundedProcess): a child in a session of
         // its own, torn down with its descendants. Its Foundation trait is not needed. swift-system supplies `FilePath` off
@@ -54,9 +54,9 @@ let package = Package(
         // The wire format of the facts cache's shards (ADR-0011), pinned like AemiJSON to one revision on the same aemi.
         .package(
             url: "https://github.com/g-cqd/AemiProtobuf.git",
-            revision: "24a46dc7a4b76fbc759e4f24a6395fa7cdd93b59"
+            revision: "edede35c0ac8ec6eda12088308630e46c0e2eab9"
         ),
-        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "63af9e16552d3d53fed6a991a6953c6377448c38"),
+        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "25f59b943eaeaaea9a1ff6fdc36e06dd45a84900"),
     ],
     targets: [
         // The configuration every analyzer reads: one directory, the shared `.swift-analyzers.json` and the tool's own
@@ -112,6 +112,9 @@ let package = Package(
             name: "IndexStoreSupport",
             dependencies: [
                 "SourceCorpus", "ProjectModel", "ReportSupport", .product(name: "AemiKernel", package: "aemi"),
+                .product(name: "AemiProcess", package: "aemi"),
+                // The compiler's `#if` configuration, decoded (ADR-0030).
+                .product(name: "SwiftIfConfig", package: "swift-syntax"),
                 .product(name: "IndexStoreDB", package: "indexstore-db", condition: .when(platforms: [.macOS])),
                 .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "SystemPackage", package: "swift-system", condition: .when(platforms: [.linux])),
@@ -123,6 +126,8 @@ let package = Package(
             dependencies: [
                 "IndexStoreSupport", "ProjectModel", "ReportSupport",
                 .product(name: "IndexStoreDB", package: "indexstore-db", condition: .when(platforms: [.macOS])),
+                .product(name: "SwiftIfConfig", package: "swift-syntax"),
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
             ],
             swiftSettings: strictSwiftSettings
         ),
@@ -150,6 +155,8 @@ let package = Package(
                 .product(name: "AemiKernel", package: "aemi"),
                 .product(name: "AemiIO", package: "aemi"),
                 .product(name: "AemiFileSystem", package: "aemi"),
+                // TreeSnapshot's bounded parallel copy and hashing (ADR-0030).
+                .product(name: "AemiRuntime", package: "aemi"),
             ],
             swiftSettings: strictSwiftSettings
         ),

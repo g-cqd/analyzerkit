@@ -34,4 +34,22 @@ public enum Fingerprint {
     public static func make(rule: String, path: String, line: Int, column: Int, message: String) -> String {
         string(of: hash("\(rule)|\(path)|\(line)|\(column)|\(message)"))
     }
+
+    /// An identity that survives edits elsewhere in the file (ADR-0030): the rule, the path, the enclosing
+    /// declaration's name (`Type.method(_:)`, or empty at file scope), the finding's source text with its whitespace
+    /// collapsed, and which occurrence of that text it is within the declaration (0 for the first).
+    ///
+    /// ``make(rule:path:line:column:message:)`` changes whenever a line is added above a finding, so a baseline breaks
+    /// on unrelated edits; this one changes only when the finding's own code, its declaration's name, or the order of
+    /// identical texts in that declaration does. It is a second identity, written beside the first in SARIF
+    /// (`partialFingerprints`, key `<tool>/anchored/v1`); baselines keep the first until they adopt a version that
+    /// reads both.
+    public static func anchored(rule: String, path: String, declaration: String, text: String, ordinal: Int) -> String {
+        "a" + string(of: hash("\(rule)|\(path)|\(declaration)|\(normalized(text))|\(ordinal)"))
+    }
+
+    /// `text` with every run of whitespace replaced by one space, and none at either end.
+    static func normalized(_ text: String) -> String {
+        text.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" || $0 == "\r" }).joined(separator: " ")
+    }
 }

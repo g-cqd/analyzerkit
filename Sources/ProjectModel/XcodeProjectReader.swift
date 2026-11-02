@@ -4,6 +4,8 @@ struct XcodeProjectModel: Sendable, Equatable {
     struct Target: Sendable, Equatable {
         var name: String
         var productType: String
+        /// The targets of the same project it depends on (`PBXTargetDependency`), by index.
+        var dependencies: [Int] = []
     }
 
     /// A path that puts the files at or under it into a target, minus the excluded paths at or under which they lie.
@@ -77,6 +79,16 @@ enum XcodeProjectReader {
                 default: continue
                 }
             }
+        }
+        // Dependencies, once every target has its index.
+        for (targetID, index) in targetIndex {
+            for dependencyID in objects[targetID]?.dictionary?["dependencies"]?.strings ?? [] {
+                guard let dependency = objects[dependencyID]?.dictionary?["target"]?.string,
+                    let target = targetIndex[dependency]
+                else { continue }
+                model.targets[index].dependencies.append(target)
+            }
+            model.targets[index].dependencies.sort()
         }
         // Synchronized folders: a folder's files belong to the targets owning it; an exception set flips membership for
         // its target, removing a file from an owner and adding it to any other target.

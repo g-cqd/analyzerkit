@@ -56,11 +56,15 @@ public protocol ReportedFinding: Sendable {
     var relatedLocations: [ReportedLocation] { get }
     /// SARIF's result `properties`; none by default.
     var sarifProperties: [String: Sarif.Property]? { get }
+    /// The content-anchored identity (``Fingerprint/anchored(rule:path:declaration:text:ordinal:)``), written to SARIF
+    /// beside ``fingerprint``; nil by default.
+    var anchoredFingerprint: String? { get }
 }
 
 extension ReportedFinding {
     public var relatedLocations: [ReportedLocation] { [] }
     public var sarifProperties: [String: Sarif.Property]? { nil }
+    public var anchoredFingerprint: String? { nil }
 }
 
 /// A file the run read in part or not at all.
@@ -130,6 +134,8 @@ public protocol ToolReportFormat {
 }
 
 extension ToolReportFormat {
+    /// The report in `format`; `{}` when it cannot be encoded, which reads as an empty, clean report: prefer
+    /// ``formatChecked(_:as:relativeTo:runNotes:skippedFiles:verbose:timings:)``, which throws then (ADR-0030).
     /// - Parameters:
     ///   - root: the directory `report` was relativized to, if any. SARIF declares it as the base its relative uris
     ///     resolve against.
@@ -146,11 +152,33 @@ extension ToolReportFormat {
         verbose: Bool = false,
         timings: Bool = false
     ) -> String {
+        (try? formatChecked(
+            report,
+            as: format,
+            relativeTo: root,
+            runNotes: runNotes,
+            skippedFiles: skippedFiles,
+            verbose: verbose,
+            timings: timings
+        )) ?? "{}"
+    }
+
+    /// The report in `format`, or an error when it cannot be encoded (a non-finite number, an encoder failure), so a
+    /// report that failed is never written as an empty one. Parameters as ``format(_:as:relativeTo:runNotes:skippedFiles:verbose:timings:)``.
+    public static func formatChecked(
+        _ report: Report,
+        as format: ReportOutputFormat,
+        relativeTo root: String? = nil,
+        runNotes: [RunNote] = [],
+        skippedFiles: [SkippedFile] = [],
+        verbose: Bool = false,
+        timings: Bool = false
+    ) throws(ReportEncodingFailure) -> String {
         switch format {
         case .xcode:
             return xcode(report)
         case .json:
-            return encode(
+            return try encode(
                 envelope(
                     report,
                     root: root.map(SourcePath.canonical),
@@ -161,7 +189,7 @@ extension ToolReportFormat {
                 )
             )
         case .sarif:
-            return sarif(report, root: root.map(SourcePath.canonical))
+            return try encode(sarifLog(report, root: root.map(SourcePath.canonical)))
         }
     }
 
@@ -249,7 +277,7 @@ extension ToolReportFormat {
 
     /// The SARIF log, on the shared model.
     /// - Parameter root: the canonical directory the report's relative paths hang from, or nil when every path is absolute.
-    private static func sarif(_ report: Report, root: String?) -> String {
+    private static func sarifLog(_ report: Report, root: String?) -> Sarif.Log {
         var columns = SarifColumns(root: root, byteOrderMark: byteOrderMark, readCap: readCap)
         /// Where a finding or a related location points, its column in UTF-16.
         func location(_ path: String, line: Int, column: Int, message: String? = nil) -> Sarif.Location {
@@ -272,7 +300,9 @@ extension ToolReportFormat {
                 relatedLocations: related.isEmpty
                     ? nil
                     : related.map { location($0.path, line: $0.line, column: $0.column, message: $0.message) },
-                partialFingerprints: ["\(toolName)/v1": finding.fingerprint],
+                partialFingerprints: finding.anchoredFingerprint.map {
+                    ["\(toolName)/v1": finding.fingerprint, "\(toolName)/anchored/v1": $0]
+                } ?? ["\(toolName)/v1": finding.fingerprint],
                 properties: finding.sarifProperties
             )
         }
@@ -304,7 +334,7 @@ extension ToolReportFormat {
             } else {
                 nil
             }
-        let log = Sarif.Log(runs: [
+        return Sarif.Log(runs: [
             Sarif.Run(
                 tool: Sarif.Tool(
                     driver: Sarif.Driver(
@@ -319,17 +349,30 @@ extension ToolReportFormat {
                 results: results + degradedResults
             )
         ])
-        return encode(log)
     }
 
-    /// Deterministic pretty-printed JSON for report payloads; encoding a value the tool built itself cannot reasonably
-    /// fail, so the fallback is an empty object rather than a thrown error.
-    private static func encode(_ value: some Encodable) -> String {
+    /// Deterministic pretty-printed JSON for report payloads.
+    private static func encode(_ value: some Encodable) throws(ReportEncodingFailure) -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        guard let data = try? encoder.encode(value), let text = String(data: data, encoding: .utf8) else {
-            return "{}"
+        let data: Data
+        do {
+            data = try encoder.encode(value)
+        } catch {
+            throw ReportEncodingFailure(reason: "\(error)")
+        }
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw ReportEncodingFailure(reason: "the encoded report is not UTF-8")
         }
         return text
     }
+}
+
+/// A report that could not be encoded.
+public struct ReportEncodingFailure: Error, Sendable, Equatable, CustomStringConvertible {
+    public let reason: String
+
+    public init(reason: String) { self.reason = reason }
+
+    public var description: String { "the report could not be encoded: \(reason)" }
 }
