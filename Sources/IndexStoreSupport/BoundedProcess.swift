@@ -483,16 +483,16 @@ public enum BoundedProcess {
         let me = getpid()
         let mySession = getsid(0)
         func leftovers() -> [ProcessTable.Process] {
-            ProcessTable.list().filter { process in
-                guard process.pid != me, process.pid > 1, process.started >= since else { return false }
-                if options.reapsSession, let session, session > 1, session != mySession, process.session == session {
-                    return true
+            selectLeftovers(
+                in: ProcessTable.list(),
+                session: options.reapsSession ? session : nil,
+                since: since,
+                me: me,
+                mySession: mySession,
+                holdsToken: options.environmentToken.map { token in
+                    { pid in ProcessTable.environment(of: pid, contains: token) }
                 }
-                if let token = options.environmentToken {
-                    return ProcessTable.environment(of: process.pid, contains: token)
-                }
-                return false
-            }
+            )
         }
         guard options.reapsSession || options.environmentToken != nil else { return [] }
         var signalled: [Int32] = []
@@ -511,6 +511,31 @@ public enum BoundedProcess {
             for process in alive { ProcessTable.send(SIGKILL, to: process.pid) }
         }
         return Array(Set(signalled)).sorted()
+    }
+
+    /// The processes of `list` a cleanup ends: started since `since`, not this process, and either members of
+    /// `session` or holders of the token.
+    ///
+    /// The session is matched only while its id is not in use as a process id. The child that led it has been reaped
+    /// when this runs, so a process holding that pid is a newcomer, and a kernel hands out a pid that is still a
+    /// session's id to nobody (FreeBSD's `fork1` and Linux's `struct pid` both refuse; XNU inherits BSD's check): the
+    /// session then has no member left, and the processes now carrying its number belong to an unrelated session,
+    /// which a new `swift build` led in a run of Litmus (2026-11-02, killed with status 137).
+    static func selectLeftovers(
+        in list: [ProcessTable.Process],
+        session: Int32?,
+        since: Int64,
+        me: Int32,
+        mySession: Int32,
+        holdsToken: ((Int32) -> Bool)?
+    ) -> [ProcessTable.Process] {
+        var session = session
+        if let id = session, id <= 1 || id == mySession || list.contains(where: { $0.pid == id }) { session = nil }
+        return list.filter { process in
+            guard process.pid != me, process.pid > 1, process.started >= since else { return false }
+            if let session, process.session == session { return true }
+            return holdsToken?(process.pid) ?? false
+        }
     }
 
     private static func microsecondsSince1970() -> Int64 {
