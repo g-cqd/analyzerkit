@@ -49,6 +49,32 @@ enum PackageManifestReader {
         return .targets(targets)
     }
 
+    /// The directories of the local packages a manifest depends on (`.package(path:)`, `.package(name:path:)`), as
+    /// spelled, relative to the manifest's directory or absolute; empty without `dependencies:`. Nil when they cannot be
+    /// known without running the manifest: a `dependencies:` that is not a literal list, an element that is not a
+    /// `.package(…)` call, a path that is not a literal, or a list changed after the `Package(…)` call.
+    static func localDependencies(_ source: String) -> [String]? {
+        let tree = Parser.parse(source: source)
+        guard !tree.hasError else { return nil }
+        let finder = PackageCallFinder(viewMode: .sourceAccurate)
+        finder.walk(tree)
+        guard finder.mutation == nil, !finder.dependenciesChanged, finder.calls.count == 1,
+            let call = finder.calls.first
+        else { return nil }
+        guard let argument = call.arguments.first(where: { $0.label?.text == "dependencies" }) else { return [] }
+        guard let list = argument.expression.as(ArrayExprSyntax.self) else { return nil }
+        var paths: [String] = []
+        for element in list.elements {
+            guard let package = element.expression.as(FunctionCallExprSyntax.self),
+                package.calledExpression.as(MemberAccessExprSyntax.self)?.declName.baseName.text == "package"
+            else { return nil }
+            guard let path = package.arguments.first(where: { $0.label?.text == "path" }) else { continue }
+            guard let literal = literal(path.expression) else { return nil }
+            paths.append(literal)
+        }
+        return paths
+    }
+
     struct Reason: Error {
         let text: String
     }
@@ -151,6 +177,8 @@ enum PackageManifestReader {
 private final class PackageCallFinder: SyntaxVisitor {
     var calls: [FunctionCallExprSyntax] = []
     var mutation: String?
+    /// `dependencies` is changed after the `Package(…)` call (not a membership property: it does not move files).
+    var dependenciesChanged = false
 
     /// Properties whose change alters which files a target compiles.
     static let membershipProperties: Set<String> = ["targets", "path", "sources", "exclude"]
@@ -172,6 +200,9 @@ private final class PackageCallFinder: SyntaxVisitor {
     }
 
     override func visit(_ node: MemberAccessExprSyntax) -> SyntaxVisitorContinueKind {
+        if node.base != nil, node.declName.baseName.text == "dependencies", Self.isChanged(node) {
+            dependenciesChanged = true
+        }
         guard node.base != nil, Self.membershipProperties.contains(node.declName.baseName.text) else {
             return .visitChildren
         }
@@ -195,5 +226,22 @@ private final class PackageCallFinder: SyntaxVisitor {
             }
         }
         return .visitChildren
+    }
+
+    /// `x.p.append(…)`, `x.p = …` or `x.p += …` for the member access `x.p`.
+    private static func isChanged(_ node: MemberAccessExprSyntax) -> Bool {
+        if let parent = node.parent?.as(MemberAccessExprSyntax.self), parent.base?.id == node.id,
+            mutatingMethods.contains(parent.declName.baseName.text)
+        {
+            return true
+        }
+        guard let list = node.parent?.as(ExprListSyntax.self) else { return false }
+        let elements = Array(list)
+        guard let index = elements.firstIndex(where: { $0.id == node.id }), index + 1 < elements.count else {
+            return false
+        }
+        let next = elements[index + 1]
+        return next.is(AssignmentExprSyntax.self)
+            || next.as(BinaryOperatorExprSyntax.self).map({ ["+=", "-="].contains($0.operator.text) }) == true
     }
 }

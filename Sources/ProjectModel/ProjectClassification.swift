@@ -102,6 +102,8 @@ public struct ProjectClassification: Sendable {
     struct Package: Sendable {
         var manifest: String
         var targets: [ResolvedTarget]?
+        /// The canonical directories of the local packages it depends on; nil when not literal.
+        var localDependencies: [String]? = nil
     }
 
     struct ResolvedTarget: Sendable {
@@ -140,14 +142,19 @@ public struct ProjectClassification: Sendable {
                 packages[directory] = Package(manifest: manifest, targets: nil)
                 continue
             }
-            switch PackageManifestReader.read(String(decoding: data, as: UTF8.self)) {
+            let source = String(decoding: data, as: UTF8.self)
+            let local = PackageManifestReader.localDependencies(source)?.map {
+                ProjectPaths.join(directory, $0)
+            }
+            switch PackageManifestReader.read(source) {
             case .unknown(let reason):
                 unknown.append(UnknownProject(path: manifest, reason: reason))
-                packages[directory] = Package(manifest: manifest, targets: nil)
+                packages[directory] = Package(manifest: manifest, targets: nil, localDependencies: local)
             case .targets(let declared):
                 packages[directory] = Package(
                     manifest: manifest,
-                    targets: declared.compactMap { resolve($0, in: directory, manifest: manifest) }
+                    targets: declared.compactMap { resolve($0, in: directory, manifest: manifest) },
+                    localDependencies: local
                 )
             }
         }
@@ -209,6 +216,28 @@ public struct ProjectClassification: Sendable {
             exclude: declared.exclude.map { ProjectPaths.join(root, $0) },
             dependencies: declared.dependencies
         )
+    }
+
+    /// The package directories whose files can change what the package compiling `path` (canonical) builds and tests:
+    /// the innermost package directory containing it, and every local package it depends on (`.package(path:)`),
+    /// transitively. Sorted. Nil when no package contains the file, or when a manifest of the closure has dependencies
+    /// that cannot be read without running it, or names a local package outside the layout: the caller must then
+    /// assume the whole tree matters.
+    ///
+    /// What a cache keyed by a change needs (Litmus reuses a mutant's verdict only when nothing in this closure changed,
+    /// ADR-0031). Remote dependencies are pinned by each package's `Package.resolved`, which is inside its directory.
+    public func packageClosure(containing path: String) -> [String]? {
+        guard
+            let owner = packages.keys.filter({ path.hasPrefix($0 + "/") }).max(by: { $0.count < $1.count })
+        else { return nil }
+        var closure: Set<String> = []
+        var queue = [owner]
+        while let directory = queue.popLast() {
+            guard closure.insert(directory).inserted else { continue }
+            guard let package = packages[directory], let dependencies = package.localDependencies else { return nil }
+            queue += dependencies
+        }
+        return closure.sorted()
     }
 
     /// The test targets that can reach the code of the file at `path` (canonical): those compiling it, and those that

@@ -24,3 +24,11 @@ part of a change. `rebased(onto:)` views a repository diff from a package subdir
 - Litmus's `--diff`/`--diff-base` use it; analyzers can add a line scope on the same reader.
 - The tool decides what a change "touches" from lines; whether a removal changes the code around it is the caller's
   policy (Litmus: no).
+
+## Addendum — the package closure of a file
+
+A cache keyed by what changed (Litmus's result store) needs the files that can change a mutant's verdict.
+`ProjectClassification.packageClosure(containing:)` gives the innermost package directory containing a file and its
+local path dependencies (`.package(path:)`), transitively, read without running manifests. Nil when the file is in no
+package, a manifest's `dependencies:` is not literal or is changed after the `Package(…)` call, or a local dependency is
+outside the layout: the caller then treats the whole tree as relevant.
