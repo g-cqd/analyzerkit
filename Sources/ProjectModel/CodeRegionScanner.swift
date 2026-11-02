@@ -1,15 +1,32 @@
 public import SwiftSyntax
 
-/// Lines of one file that belong to a region: `startLine...endLine`.
+/// Lines of one file that belong to a region: `startLine...endLine`, and the exact UTF-8 byte range when the scanner
+/// knows it.
 public struct RegionSpan: Sendable, Hashable {
     public let startLine: Int
     public let endLine: Int
     public let region: CodeRegion
+    /// The span's UTF-8 offsets in the file, from its first token to the end of its last (ADR-0030): a site on a line
+    /// shared with the span but outside these bytes is not in the region. Nil for spans built from lines only.
+    public let bytes: Range<Int>?
 
-    public init(startLine: Int, endLine: Int, region: CodeRegion) {
+    public init(startLine: Int, endLine: Int, region: CodeRegion, bytes: Range<Int>? = nil) {
         self.startLine = startLine
         self.endLine = endLine
         self.region = region
+        self.bytes = bytes
+    }
+
+    /// Lines and region, as before byte ranges were added: spans compare and hash as they always did, so the byte
+    /// range is extra detail, not identity.
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.startLine == rhs.startLine && lhs.endLine == rhs.endLine && lhs.region == rhs.region
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(startLine)
+        hasher.combine(endLine)
+        hasher.combine(region)
     }
 }
 
@@ -37,7 +54,9 @@ public enum CodeRegionScanner {
         private func add(_ node: some SyntaxProtocol, _ region: CodeRegion) {
             let start = converter.location(for: node.positionAfterSkippingLeadingTrivia).line
             let end = converter.location(for: node.endPositionBeforeTrailingTrivia).line
-            spans.append(RegionSpan(startLine: start, endLine: end, region: region))
+            let bytes =
+                node.positionAfterSkippingLeadingTrivia.utf8Offset..<node.endPositionBeforeTrailingTrivia.utf8Offset
+            spans.append(RegionSpan(startLine: start, endLine: end, region: region, bytes: bytes))
         }
 
         override func visit(_ node: IfConfigDeclSyntax) -> SyntaxVisitorContinueKind {
@@ -91,6 +110,18 @@ public enum CodeRegionScanner {
 }
 
 extension RegionSpan {
+    /// The union of the regions of the spans holding the byte at `offset`, on line `line`: by bytes for a span that has
+    /// them, by line for one that has not.
+    /// - Complexity: O(s) in the number of spans.
+    public static func region(atByte offset: Int, line: Int, in spans: [RegionSpan]) -> CodeRegion {
+        var region = CodeRegion.production
+        for span in spans {
+            let holds = span.bytes.map { $0.contains(offset) } ?? (span.startLine <= line && line <= span.endLine)
+            if holds { region.formUnion(span.region) }
+        }
+        return region
+    }
+
     /// The union of the regions of the spans holding `line`.
     /// - Complexity: O(s) in the number of spans.
     public static func region(atLine line: Int, in spans: [RegionSpan]) -> CodeRegion {

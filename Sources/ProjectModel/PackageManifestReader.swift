@@ -9,6 +9,9 @@ struct DeclaredPackageTarget: Sendable, Equatable {
     var path: String?
     var sources: [String]?
     var exclude: [String]
+    /// The targets of the same package it depends on, by name; nil when its `dependencies:` is not literal. Products of
+    /// other packages are left out.
+    var dependencies: [String]? = []
 }
 
 /// Reads a `Package.swift` as syntax, never running it (ADR-0024 item 2).
@@ -77,6 +80,8 @@ enum PackageManifestReader {
                     )
                 }
                 target.path = path
+            case "dependencies":
+                target.dependencies = dependencies(argument.expression)
             case "sources", "exclude":
                 guard let list = literals(argument.expression) else {
                     return .failure(
@@ -89,6 +94,35 @@ enum PackageManifestReader {
         }
         guard !target.name.isEmpty else { return .failure(Reason(text: "a target has no name")) }
         return .success(target)
+    }
+
+    /// The same-package target names of a `dependencies:` list: `"Name"`, `.target(name:)`, `.byName(name:)`, with or
+    /// without a `condition:`; `.product(…)` names another package's product and is left out. Nil when an element is
+    /// none of these.
+    private static func dependencies(_ expression: ExprSyntax) -> [String]? {
+        guard let array = expression.as(ArrayExprSyntax.self) else { return nil }
+        var names: [String] = []
+        for element in array.elements {
+            if let name = literal(element.expression) {
+                names.append(name)
+                continue
+            }
+            guard let call = element.expression.as(FunctionCallExprSyntax.self),
+                let member = call.calledExpression.as(MemberAccessExprSyntax.self)
+            else { return nil }
+            switch member.declName.baseName.text {
+            case "product":
+                continue
+            case "target", "byName":
+                guard let argument = call.arguments.first(where: { $0.label?.text == "name" }),
+                    let name = literal(argument.expression)
+                else { return nil }
+                names.append(name)
+            default:
+                return nil
+            }
+        }
+        return names
     }
 
     /// A string literal without interpolation.

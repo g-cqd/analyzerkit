@@ -130,8 +130,15 @@ struct XcodeFixture {
         type: String,
         folders: [String] = [],
         sources: [String] = [],
-        phases: [String] = []
+        phases: [String] = [],
+        dependencies: [String] = []
     ) {
+        var dependencyIDs: [String] = []
+        for dependency in dependencies {
+            let id = newID()
+            objects.append((id, "PBXTargetDependency", [("target", .string(targetID(dependency)))]))
+            dependencyIDs.append(id)
+        }
         var buildFiles: [String] = []
         for reference in sources {
             let id = newID()
@@ -151,6 +158,7 @@ struct XcodeFixture {
             ("productName", .string(name)), ("productType", .string(type)),
         ]
         if !folders.isEmpty { fields.insert(("fileSystemSynchronizedGroups", .list(folders)), at: 1) }
+        if !dependencyIDs.isEmpty { fields.insert(("dependencies", .list(dependencyIDs)), at: 1) }
         objects.append((id, "PBXNativeTarget", fields))
         targetList.append(id)
     }

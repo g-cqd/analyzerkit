@@ -16,6 +16,7 @@ import Testing
         var fingerprint = "fp1"
         var relatedLocations: [ReportedLocation] = []
         var sarifProperties: [String: Sarif.Property]?
+        var anchoredFingerprint: String?
     }
 
     private struct Degraded: ReportedDegradedFile {
@@ -149,6 +150,50 @@ import Testing
             Self.object(Format.format(report, as: .json, timings: true))["timings"] as? [String: Double]
         )
         #expect(timed == ["parse": 0.5])
+    }
+
+    /// A report that cannot be encoded is an error, not an empty object (ADR-0030).
+    @Test func `a report that cannot be encoded throws instead of reading as empty`() throws {
+        var report = Report()
+        report.timings = ["parse": .nan]
+        #expect(throws: ReportEncodingFailure.self) { try Format.formatChecked(report, as: .json, timings: true) }
+        #expect(Format.format(report, as: .json, timings: true) == "{}")
+        report.timings = ["parse": 0.25]
+        #expect(
+            try Format.formatChecked(report, as: .json, timings: true)
+                == Format.format(report, as: .json, timings: true)
+        )
+        #expect(try Format.formatChecked(report, as: .sarif) == Format.format(report, as: .sarif))
+    }
+
+    @Test func `an anchored fingerprint ignores lines and whitespace, not the code or its declaration`() {
+        let base = Fingerprint.anchored(rule: "r", path: "A.swift", declaration: "T.f()", text: "a  &&\n b", ordinal: 0)
+        #expect(
+            base == Fingerprint.anchored(rule: "r", path: "A.swift", declaration: "T.f()", text: "a && b", ordinal: 0)
+        )
+        #expect(
+            base != Fingerprint.anchored(rule: "r", path: "A.swift", declaration: "T.g()", text: "a && b", ordinal: 0)
+        )
+        #expect(
+            base != Fingerprint.anchored(rule: "r", path: "A.swift", declaration: "T.f()", text: "a || b", ordinal: 0)
+        )
+        #expect(
+            base != Fingerprint.anchored(rule: "r", path: "A.swift", declaration: "T.f()", text: "a && b", ordinal: 1)
+        )
+        #expect(base.hasPrefix("a"))
+    }
+
+    @Test func `sarif carries the anchored fingerprint beside the first`() throws {
+        var report = Report()
+        var finding = Finding()
+        finding.anchoredFingerprint = "a123"
+        report.findings = [finding, Finding()]
+        let log = try Self.object(Format.format(report, as: .sarif))
+        let results = try #require(((log["runs"] as? [[String: Any]])?.first?["results"]) as? [[String: Any]])
+        #expect(
+            results[0]["partialFingerprints"] as? [String: String] == ["fake/v1": "fp1", "fake/anchored/v1": "a123"]
+        )
+        #expect(results[1]["partialFingerprints"] as? [String: String] == ["fake/v1": "fp1"])
     }
 
     // MARK: sarif

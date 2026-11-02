@@ -109,6 +109,8 @@ public struct ProjectClassification: Sendable {
         var root: String
         var sources: [String]?
         var exclude: [String]
+        /// Same-package dependencies by name; nil when the manifest does not spell them literally.
+        var dependencies: [String]? = []
     }
 
     struct Project: Sendable {
@@ -204,8 +206,69 @@ public struct ProjectClassification: Sendable {
             target: target,
             root: root,
             sources: declared.sources.map { $0.map { ProjectPaths.join(root, $0) } },
-            exclude: declared.exclude.map { ProjectPaths.join(root, $0) }
+            exclude: declared.exclude.map { ProjectPaths.join(root, $0) },
+            dependencies: declared.dependencies
         )
+    }
+
+    /// The test targets that can reach the code of the file at `path` (canonical): those compiling it, and those that
+    /// depend, directly or through other targets of the same package or project, on a target compiling it. Sorted.
+    ///
+    /// Read from the manifests and `project.pbxproj` without building (ADR-0030). Conservative where the dependencies
+    /// are not known: a test target whose `dependencies:` is not literal is included. A dependency on another package's
+    /// product is not followed, and neither is a host application that a test bundle is not declared to depend on.
+    /// Empty when no target claims the file.
+    public func testTargets(covering path: String) -> [ProjectTarget] {
+        guard case .targets(let compiling) = classify(path).provenance else { return [] }
+        var found: Set<ProjectTarget> = Set(compiling.filter(\.isTest))
+        // Nothing depends on a test target: only the others are reached through dependencies.
+        let reachable = compiling.filter { !$0.isTest }
+        guard !reachable.isEmpty else { return found.sorted() }
+        for package in packages.values {
+            guard let targets = package.targets else { continue }
+            let owners = Set(reachable.filter { $0.container == package.manifest }.map(\.name))
+            guard !owners.isEmpty else { continue }
+            let byName = Dictionary(targets.map { ($0.target.name, $0) }, uniquingKeysWith: { first, _ in first })
+            for candidate in targets where candidate.target.isTest {
+                guard let direct = candidate.dependencies else {
+                    found.insert(candidate.target)
+                    continue
+                }
+                var seen: Set<String> = []
+                var queue = direct
+                while let name = queue.popLast() {
+                    guard seen.insert(name).inserted else { continue }
+                    if owners.contains(name) {
+                        found.insert(candidate.target)
+                        break
+                    }
+                    guard let next = byName[name] else { continue }
+                    guard let dependencies = next.dependencies else {
+                        found.insert(candidate.target)
+                        break
+                    }
+                    queue += dependencies
+                }
+            }
+        }
+        for project in projects {
+            guard let model = project.model else { continue }
+            let owners = Set(project.targets.indices.filter { reachable.contains(project.targets[$0]) })
+            guard !owners.isEmpty else { continue }
+            for (index, target) in project.targets.enumerated() where target.isTest {
+                var seen: Set<Int> = []
+                var queue = model.targets[index].dependencies
+                while let next = queue.popLast() {
+                    guard seen.insert(next).inserted else { continue }
+                    if owners.contains(next) {
+                        found.insert(target)
+                        break
+                    }
+                    queue += model.targets[next].dependencies
+                }
+            }
+        }
+        return found.sorted()
     }
 
     /// The region of the file at `path` (canonical) from the project, or from path conventions when no project claims

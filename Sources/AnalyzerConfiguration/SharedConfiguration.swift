@@ -14,7 +14,7 @@ public enum SharedConfiguration {
     /// The shared file's name.
     public static let fileName = ".swift-analyzers.json"
     /// The tools that have a section in the shared file.
-    public static let toolNames: Set<String> = ["arcleak", "deadwood", "dolly", "fcheck", "modeler"]
+    public static let toolNames: Set<String> = ["arcleak", "deadwood", "dolly", "fcheck", "litmus", "modeler"]
     /// The keys every tool's configuration shares, at the shared file's top level or in any section or tool file.
     public static let sharedKeys: Set<String> = ["exclude", "includeRegions", "excludeRegions", "defines", "platforms"]
 
@@ -71,6 +71,8 @@ public enum SharedConfiguration {
         /// The files and sections read, lowest precedence first.
         public let sources: [Source]
         public let overrides: [Override]
+        /// Sections of the shared file that belong to no tool this version knows, accepted and not read.
+        public internal(set) var otherSections: [String] = []
     }
 
     /// Why the configuration cannot be used: always exit 78 (ADR-0018).
@@ -121,10 +123,11 @@ public enum SharedConfiguration {
             analyzedPaths: analyzedPaths
         )
         var layers: [(source: Source, members: OrderedDictionary<String, JSONValue>)] = []
+        var others: [String] = []
         for file in files {
             let members = try object(at: file.path)
             if file.isShared {
-                layers += try sharedLayers(members, path: file.path, tool: tool)
+                layers += try sharedLayers(members, path: file.path, tool: tool, others: &others)
             } else {
                 for (key, value) in members {
                     try check(key, value, allowed: tool.keys, reported: key, path: file.path)
@@ -132,7 +135,9 @@ public enum SharedConfiguration {
                 layers.append((Source(path: file.path), members))
             }
         }
-        return try merged(layers, directory: files.first.map { Self.parent(of: $0.path) })
+        var resolved = try merged(layers, directory: files.first.map { Self.parent(of: $0.path) })
+        resolved.otherSections = others
+        return resolved
     }
 
     // MARK: - Finding the files
@@ -220,11 +225,13 @@ public enum SharedConfiguration {
         return members
     }
 
-    /// The shared file's top level and this tool's section, each checked; other tools' sections only as objects.
+    /// The shared file's top level and this tool's section, each checked; other tools' sections only as objects, and
+    /// sections of tools this version does not know listed in `others`.
     private static func sharedLayers(
         _ members: OrderedDictionary<String, JSONValue>,
         path: String,
-        tool: Tool
+        tool: Tool,
+        others: inout [String]
     ) throws(Failure) -> [(source: Source, members: OrderedDictionary<String, JSONValue>)] {
         var top: OrderedDictionary<String, JSONValue> = [:]
         var section: OrderedDictionary<String, JSONValue>?
@@ -232,7 +239,7 @@ public enum SharedConfiguration {
             if sharedKeys.contains(key) {
                 try checkType(key, value, path: path)
                 top[key] = value
-            } else if toolNames.contains(key) {
+            } else if toolNames.contains(key) || key == tool.name {
                 guard case .object(let entries) = value else {
                     throw .invalid(path: path, reason: "\"\(key)\" is not an object")
                 }
@@ -241,6 +248,11 @@ public enum SharedConfiguration {
                     try check(entry, entryValue, allowed: tool.keys, reported: "\(key).\(entry)", path: path)
                 }
                 section = entries
+            } else if case .object = value, !toolNames.contains(where: { editDistance($0, key) <= 2 }) {
+                // The section of a tool this version does not know, accepted so that adding a tool to the shared file
+                // does not break the others, and listed (`--verbose`). A name within two edits of a known tool's is a
+                // misspelling, and stays an unknown key.
+                others.append(key)
             } else {
                 throw .unknownKey(path: path, key: key)
             }
@@ -248,6 +260,20 @@ public enum SharedConfiguration {
         var layers = [(source: Source(path: path), members: top)]
         if let section { layers.append((Source(path: path, section: tool.name), section)) }
         return layers
+    }
+
+    /// The Levenshtein distance between two short names.
+    static func editDistance(_ a: String, _ b: String) -> Int {
+        let a = Array(a.utf8), b = Array(b.utf8)
+        var previous = Array(0...b.count)
+        for (i, x) in a.enumerated() {
+            var current = [i + 1] + [Int](repeating: 0, count: b.count)
+            for (j, y) in b.enumerated() {
+                current[j + 1] = min(previous[j + 1] + 1, current[j] + 1, previous[j] + (x == y ? 0 : 1))
+            }
+            previous = current
+        }
+        return previous[b.count]
     }
 
     private static func check(
@@ -323,6 +349,7 @@ extension SharedConfiguration.Resolved {
             sources.map(\.description).joined(separator: ", ")
         }
         return [prefix + "read " + list(sources)]
+            + otherSections.map { prefix + "section \"\($0)\" is no known tool's; not read" }
             + overrides.map { override in
                 override.combined
                     ? prefix + "\(override.key) combined from " + list(override.overridden + [override.winner])

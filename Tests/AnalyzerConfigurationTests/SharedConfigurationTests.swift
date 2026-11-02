@@ -1,6 +1,7 @@
-import AnalyzerConfiguration
 import Foundation
 import Testing
+
+@testable import AnalyzerConfiguration
 
 @Suite struct SharedConfigurationTests {
     private static let arcleak = SharedConfiguration.Tool(
@@ -159,6 +160,30 @@ import Testing
             let other = try resolve(root)
             #expect(other.json == Array("{}".utf8))
         }
+    }
+
+    /// A tool this version does not know may keep its section in the shared file (ADR-0030): the other tools read the
+    /// file as before and list the section with `--verbose`.
+    @Test func `a section of a tool this version does not know is accepted and listed`() throws {
+        try project([".swift-analyzers.json": #"{"exclude": ["G/"], "mutator": {"anything": [1]}, "litmus": {"x": 1}}"#]
+        ) {
+            root in
+            let resolved = try resolve(root)
+            #expect(try object(resolved)["exclude"] as? [String] == ["G/"])
+            #expect(resolved.otherSections == ["mutator"])
+            #expect(
+                resolved.verboseLines(tool: "arcleak").contains {
+                    $0.contains(#"section "mutator" is no known tool's"#)
+                }
+            )
+        }
+        // A name two edits from a known tool's is a misspelling.
+        try project([".swift-analyzers.json": #"{"fchek": {}}"#]) { root in
+            #expect(throws: SharedConfiguration.Failure.self) { try resolve(root) }
+        }
+        #expect(SharedConfiguration.editDistance("arcleak", "arleak") == 1)
+        #expect(SharedConfiguration.editDistance("", "abc") == 3)
+        #expect(SharedConfiguration.toolNames.contains("litmus"))
     }
 
     @Test func `a malformed file or a shared key of the wrong type fails`() throws {
