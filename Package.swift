@@ -128,6 +128,7 @@ let package = Package(
                 .product(name: "IndexStoreDB", package: "indexstore-db", condition: .when(platforms: [.macOS])),
                 .product(name: "SwiftIfConfig", package: "swift-syntax"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "AemiProcess", package: "aemi"),
             ],
             swiftSettings: strictSwiftSettings
         ),
