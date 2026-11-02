@@ -95,4 +95,22 @@ import Testing
         #expect(one.digest.count == 64)
         #expect(one.totalBytes == 2)
     }
+
+    @Test func `under the skip policy a link is left out, listed, and never followed`() async throws {
+        let source = try tree(["A.swift": "let a = 1"])
+        let destination = source + "-copy"
+        defer {
+            try? FileManager.default.removeItem(atPath: source)
+            try? FileManager.default.removeItem(atPath: destination)
+        }
+        try FileManager.default.createDirectory(atPath: source + "/.claude", withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(atPath: source + "/.claude/skills", withDestinationPath: "/etc")
+        var limits = TreeSnapshot.Limits()
+        limits.links = .skip
+        let (manifest, _) = try await TreeSnapshot.copy(from: source, to: destination, limits: limits)
+        #expect(manifest.skippedLinks == [".claude/skills"])
+        #expect(manifest.entries.map(\.path) == ["A.swift"])
+        #expect((try? FileManager.default.destinationOfSymbolicLink(atPath: destination + "/.claude/skills")) == nil)
+        #expect(!FileManager.default.fileExists(atPath: destination + "/.claude/skills"))
+    }
 }

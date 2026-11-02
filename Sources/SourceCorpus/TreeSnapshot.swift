@@ -32,6 +32,8 @@ public enum TreeSnapshot {
         public let entries: [Entry]
         /// The directories, relative, sorted.
         public let directories: [String]
+        /// Links left out under ``Limits/links`` `.skip`, relative, sorted; never followed, never copied.
+        public var skippedLinks: [String] = []
 
         public init(entries: [Entry], directories: [String]) {
             self.entries = entries.sorted { $0.path < $1.path }
@@ -58,8 +60,17 @@ public enum TreeSnapshot {
         public var maxTotalBytes = 8 << 30
         /// Files copied or hashed at once.
         public var jobs = 8
+        /// What a link does to the snapshot: refuse it (the default), or leave it out and list it
+        /// (``Manifest/skippedLinks``). Either way it is never followed.
+        public var links = LinkPolicy.refuse
 
         public init() {}
+    }
+
+    /// How a snapshot treats a symbolic link.
+    public enum LinkPolicy: Sendable, Hashable {
+        case refuse
+        case skip
     }
 
     /// Why a snapshot was refused or failed; the partial copy is removed first.
@@ -79,9 +90,11 @@ public enum TreeSnapshot {
     /// The manifest of `root` as it is.
     public static func inventory(_ root: String, limits: Limits = Limits()) async throws(Failure) -> Manifest {
         let root = SourcePath.canonical(root)
-        let (directories, files) = try listing(root, limits: limits)
+        let (directories, files, links) = try listing(root, limits: limits)
         let entries = try await hashed(files, root: root, limits: limits) { _ in }
-        return Manifest(entries: entries, directories: directories)
+        var manifest = Manifest(entries: entries, directories: directories)
+        manifest.skippedLinks = links
+        return manifest
     }
 
     /// Copies `source` to `destination`, which must not exist and must lie outside `source`, and returns the
@@ -103,7 +116,7 @@ public enum TreeSnapshot {
             throw Failure("cannot create \(destination): \(error)")
         }
         do throws(Failure) {
-            let (directories, paths) = try listing(source, limits: limits)
+            let (directories, paths, links) = try listing(source, limits: limits)
             for directory in directories {
                 do {
                     try files.createDirectory(atPath: destination + "/" + directory, withIntermediateDirectories: false)
@@ -121,7 +134,9 @@ public enum TreeSnapshot {
                     throw Failure("cannot copy \(relative): \(error)")
                 }
             }
-            return (Manifest(entries: entries, directories: directories), cloned.value)
+            var manifest = Manifest(entries: entries, directories: directories)
+            manifest.skippedLinks = links
+            return (manifest, cloned.value)
         } catch {
             try? files.removeItem(atPath: destination)
             throw error
@@ -150,7 +165,7 @@ public enum TreeSnapshot {
     }
 
     /// The directories and regular files under `root`, relative and sorted; a link or a special file is refused.
-    private static func listing(_ root: String, limits: Limits) throws(Failure) -> ([String], [String]) {
+    private static func listing(_ root: String, limits: Limits) throws(Failure) -> ([String], [String], [String]) {
         let policy = DirectoryWalk.Policy(
             skippedNames: limits.skippedNames,
             includesHidden: true,
@@ -171,16 +186,19 @@ public enum TreeSnapshot {
         }
         var directories: [String] = []
         var files: [String] = []
+        var links: [String] = []
         for entry in walk.entries {
             switch entry.kind {
             case .directory: directories.append(entry.relativePath)
             case .file: files.append(entry.relativePath)
-            case .link: throw Failure("refusing a link: \(entry.relativePath)")
+            case .link:
+                guard limits.links == .skip else { throw Failure("refusing a link: \(entry.relativePath)") }
+                links.append(entry.relativePath)
             case .other: throw Failure("refusing a special file: \(entry.relativePath)")
             }
         }
         guard files.count <= limits.maxFiles else { throw Failure("more than \(limits.maxFiles) files") }
-        return (directories.sorted(), files.sorted())
+        return (directories.sorted(), files.sorted(), links.sorted())
     }
 
     /// The entries of `files` under `root`, each hashed after `each` ran for it, at most `limits.jobs` at once.
