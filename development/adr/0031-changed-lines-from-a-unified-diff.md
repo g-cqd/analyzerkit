@@ -1,7 +1,9 @@
-# ADR-0031 — Changed lines from a unified diff
+---
+status: accepted
+date: 2026-11-02
+---
 
-Status: accepted
-Date: 2026-11-02
+# 0031 — Changed lines from a unified diff, and the package closure of a file
 
 ## Context
 
