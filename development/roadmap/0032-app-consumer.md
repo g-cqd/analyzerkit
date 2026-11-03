@@ -6,7 +6,7 @@ date: 2026-10-29
 
 # 0032 — the reference app: the update, file by file
 
-Repository: the reference app `ios` (worktrees under `~/Developer/app/ios`). Contract in use today: research
+Repository: the reference app. Contract in use today: research
 `2026-10-29-consumers-and-ci-contract.md` §1–2.
 
 ## Wave 1 (same findings)
@@ -23,7 +23,7 @@ Repository: the reference app `ios` (worktrees under `~/Developer/app/ios`). Con
    `CIPlugins/Tests/DangerXCResultParserTests/AnalyzerFixtures.swift` and keep the old one.
 4. `…/Analysis/Analysis.swift` `indexStorePath(environment:)`: unchanged to keep working. Optional: pass
    `DERIVED_DATA_PATH` directly, since the tools now accept a DerivedData root and match `WorkspacePath`.
-5. Runner hygiene (self-hosted `mobile`): delete `~/Desktop/analyzer-cache/*/facts` once (v1 files; the tools would replace
+5. Runner hygiene (self-hosted): delete `~/Desktop/analyzer-cache/*/facts` once (v1 files; the tools would replace
    them anyway) and `~/Library/Caches/{arcleak,deadwood,dolly}` legacy files (the tools trim them on first run).
 6. Configuration: `.arcleak.json`, `.deadwood.json`, `.dolly.json` unchanged. Optional: replace them by one
    `.swift-analyzers.json` (shared `exclude`, `dolly.duplication`), update the three file references in

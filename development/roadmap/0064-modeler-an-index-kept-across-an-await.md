@@ -6,7 +6,7 @@ date: 2026-10-31
 
 # 0064 — modeler: an index into a member kept across an `await`
 
-`MessageListViewModel.refreshMessage(with:)` in the reference app takes `messages.firstIndex(where:)`, awaits the server,
+A chat view model's `refreshMessage(with:)` in the reference app takes `messages.firstIndex(where:)`, awaits the server,
 then calls `messages.replaceSubrange(index..<index + 1, …)`. A message that the socket inserts at 0 in the meantime moves
 the replacement onto a neighbour; `refresh()` setting `messages = []` makes the range invalid, which traps. modeler 0.3.0
 reports it as a `reentrancy` on `messages`, because the index came from a `guard let`, which is a check. Bound with
@@ -24,5 +24,5 @@ finding on that line is not reported twice.
 ## Done
 
 modeler red `d09cef2`, green `cc466eb`. Effects `bindIndex` and `useIndex`; an error by default. On the reference app,
-`MessageListViewModel.refreshMessage(with:)` moves from `reentrancy` to `stale-index`, and nothing else changes; the
+A chat view model's `refreshMessage(with:)` moves from `reentrancy` to `stale-index`, and nothing else changes; the
 family's repositories are unchanged. Released in modeler 0.4.0.

@@ -77,5 +77,5 @@ Wave 1, 2026-10-31. Every consumer is on the wave-1 set:
   bootstraps' `AEMI=` and the swift-quality references moved: AemiJSON `55015cf`, AemiRegex `045e7fa`, AemiMarkdown
   `696f33c`, ask `3a684a5`, Atelier `8243cc5`. AemiProtobuf `tools.lock` is at `64de550`, and Atelier's GitDiffViewer helper at
   arcleak `daff058` (`1e4ae04`; that commit was built in release from a clean export). Every gate ran locally on the new
-  releases with unchanged results. the reference app: arcleak 0.15.0 on a pull request (`<commit>`), whose Danger run reports
+  releases with unchanged results. the reference app: arcleak 0.15.0 on a pull request, whose Danger run reports
   `Camera.getCurrentFrameInHD()` as a new warning.

@@ -29,7 +29,7 @@ pins move.
 | the reference app | `…/Analysis/Analysis.swift` | `ANALYZER_CACHE_PATH` (default `~/Desktop/analyzer-cache`), `INDEX_STORE_PATH` or newest `Index.noindex/DataStore` under `DERIVED_DATA_PATH` | env | — |
 | the reference app | `Dangerfile.swift`, `Dangerfile.hooks.swift` | which analyzers run on commit/push/PR | Swift | — |
 | the reference app | `CIPlugins/Tests/…` (`AnalyzerFixtures`, `AnalysisReportTests`, `StaticAnalysisTests`, …) | report fixtures | tests | — |
-| the reference app | `.github/workflows/pr-run-checks.yml` | self-hosted `mobile` runner, `DERIVED_DATA_PATH` var; no `actions/cache` for analyzers | YAML | required `run-checks` |
+| the reference app | `.github/workflows/pr-run-checks.yml` | self-hosted runner, `DERIVED_DATA_PATH` var; no `actions/cache` for analyzers | YAML | required `run-checks` |
 | the reference app | `CONTRIBUTING.md`, `AGENTS.md`, `CIPlugins/README.md` | describe flags and config files | prose | — |
 | aemi | `.github/workflows/swift-quality.yml` (reusable) | defaults arcleak 0.11.0, dolly 0.10.3, deadwood 0.10.2 | release archives | arcleak gates, dolly and deadwood report |
 | aemi | `.github/workflows/swift-tool.yml` (reusable) | builds and publishes every tool's archives and bundle | — | — |

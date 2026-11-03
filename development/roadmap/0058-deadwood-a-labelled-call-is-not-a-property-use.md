@@ -27,8 +27,8 @@ optional), the by-name match drops variables and constants with a written non-fu
 every match stays, because the call may be `callAsFunction` on the property's type. A property of function type, or with
 no written type, is always kept. 5 tests; deadwood's 393 pass with its goldens unchanged.
 
-the reference app (`<worktree>`, its `.deadwood.json`, debug builds of `3d5c310` and `ff03b1b`): 57 findings
-before, 58 after, none gone. The new one, `OverviewViewModel.ticketTypeDescription`, was checked by hand. It is
+the reference app (a feature branch, its `.deadwood.json`, debug builds of `3d5c310` and `ff03b1b`): 57 findings
+before, 58 after, none gone. The new one, a view model's `ticketTypeDescription` property, was checked by hand. It is
 never read; the name's only other uses are labelled calls to two private functions `ticketTypeDescription(ticketType:)`
 and `ticketTypeDescription(for:)`. The analyzed count moved from 2,977 to 2,981 between the runs: the working tree changed
 under them (it is someone's live checkout).

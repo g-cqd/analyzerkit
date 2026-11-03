@@ -8,9 +8,9 @@ date: 2026-11-02
 ## Context
 
 The family's pull-request mode is file-scoped: `--only` lists the changed files and `--report-new-since` promotes
-findings a change created elsewhere (ADR-0019, ADR-0028). Litmus, the family's mutation tester, needs the lines: an
-the reference app pull request changes a median of 4 Swift files but creates a median of 1 mutant on its changed lines, against 8
-in the files (litmus docs/research/2026-11-02-pr-profile.md). Analyzers could later report only on changed lines too.
+findings a change created elsewhere (ADR-0019, ADR-0028). Litmus, the family's mutation tester, needs the lines: a
+pull request on the reference app changes a median of 4 Swift files but creates a median of 1 mutant on its changed lines, against 8
+in the files. Analyzers could later report only on changed lines too.
 
 ## Decision
 

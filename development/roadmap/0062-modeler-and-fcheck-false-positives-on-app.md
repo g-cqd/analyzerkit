@@ -7,10 +7,10 @@ date: 2026-10-31
 # 0062 — modeler and fcheck on the reference app: four re-checks modeler did not see, a local lock, a README example fcheck rejected
 
 First runs of fcheck 0.3.0 and modeler 0.3.0 on the reference app (its development branch, the excludes of its `.deadwood.json`,
-2,530 files, about a second each). fcheck reported 1 finding, which is a real bug (`Translator` cuts a translated
+2,530 files, about a second each). fcheck reported 1 finding, which is a real bug (a translator cuts a translated
 name at 100 UTF-8 bytes). modeler reported 29; each one was read in the code. Five were already handled there:
 
-- `DialogModel.clearTicketTypeIfNotCompatibleWith(asset:)`: after the `await`, `guard isStillCurrent(for:)`
+- a dialog model's compatibility check: after the `await`, `guard isStillCurrent(for:)`
   re-checks `ticketData` through a method of the type. modeler saw only direct reads.
 - `ImageLoader.loadThumbnail()` (2 findings): a generation token. The method bumps `loadSequence` before the
   `await` and compares it after; the only other writer of `loadingState`, `refreshThumbnail(using:)`, bumps it too.
@@ -35,7 +35,7 @@ While trying a resource in fcheck's configuration, the README's own `.fcheck.jso
   has its own test. AemiProtobuf, ask, analyzerkit, modeler, fcheck, AemiJSON and TerminalKit: unchanged (no findings).
 - fcheck red `749ba78`, green `a1b2f2d`. The test reads the README's example itself. 119 tests pass.
 
-Neither is released. Still reported on purpose: `SessionListViewModel.editSession(_:)`, where the
+Neither is released. Still reported on purpose: a session list view model's `editSession(_:)`, where the
 `isEditing` claim blocks a second `editSession` but not `deleteCurrentSession()`, which writes `editableSession` too.
 
 The TLA+ gap, done after: modeler red `9600160`, green `0618f01` (an enum records its Boolean computed properties
