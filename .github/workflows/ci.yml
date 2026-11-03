@@ -1,23 +1,28 @@
 name: CI
 
-# A library: the shared graph builds and tests it on Linux and macOS in parallel, on a cached SwiftPM tree.
-# There is no executable, so no release archives; a `v*` tag is just a tag.
 on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
+  schedule:
+    - cron: "17 3 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
+env:
+  AD_TYPECHECK_BUDGET_MS: "250"
+  AEMI_TYPECHECK_BUDGET_MS: "250"
+
 jobs:
   ci:
-    uses: Aemi-Studio/aemi/.github/workflows/swift-tool.yml@f6da05cd0efdf60700e854efb5b6092eae89b8c5 # aemi f6da05c
-    # The shared graph's `publish` job asks for contents: write; a caller must grant what a called job asks
-    # for, even though the job is skipped here (no tool, so nothing to publish).
+    uses: g-cqd/swift-ci/.github/workflows/swift-ci.yml@e79543fb62f7494b8a5c2d8898b11005e81ae4b8 # swift-ci e79543f
     permissions:
-      contents: write
-    with:
-      lint-scripts: ""
-      self-analysis: ""
+      contents: write # reusable publish permission; no archives are configured for this library
+
