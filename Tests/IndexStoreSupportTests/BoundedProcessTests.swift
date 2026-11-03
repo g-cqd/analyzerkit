@@ -38,8 +38,10 @@ import Testing
                 timeout: .milliseconds(300)
             )
         }
-        // The grace period, not a wait for pipes the shell's own child still holds.
-        #expect(ContinuousClock.now - start < .milliseconds(3_500))
+        // Both shutdown phases are bounded: the group stop and swift-subprocess teardown can each use
+        // terminationGrace. Allow scheduling headroom, but never wait for the child's 30-second sleep.
+        let shutdownBudget = BoundedProcess.terminationGrace * 2 + .seconds(2)
+        #expect(ContinuousClock.now - start < shutdownBudget)
     }
 
     /// A child's own children go with it, even one that ignores the termination signal (an ignored signal is inherited
