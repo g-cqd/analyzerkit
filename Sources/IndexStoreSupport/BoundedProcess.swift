@@ -506,12 +506,11 @@ public enum BoundedProcess {
             var alive = found
             while !alive.isEmpty, ContinuousClock.now < deadline, !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(20))
-                let current = Set(
-                    ProcessTable.list().filter { !hasTerminated($0.pid) }.map {
-                        ProcessKey(pid: $0.pid, started: $0.started)
-                    }
-                )
-                alive = alive.filter { current.contains(ProcessKey(pid: $0.pid, started: $0.started)) }
+                let current = Set(ProcessTable.list().map { ProcessKey(pid: $0.pid, started: $0.started) })
+                // Inspect zombie state only for supervised survivors, not every process on the machine.
+                alive = alive.filter {
+                    current.contains(ProcessKey(pid: $0.pid, started: $0.started)) && !hasTerminated($0.pid)
+                }
             }
             for process in alive { ProcessTable.send(SIGKILL, to: process.pid) }
         }
