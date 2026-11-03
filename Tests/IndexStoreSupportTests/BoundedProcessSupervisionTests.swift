@@ -1,7 +1,8 @@
 import Foundation
-import IndexStoreSupport
 import Synchronization
 import Testing
+
+@testable import IndexStoreSupport
 
 #if canImport(Darwin)
     import Darwin
@@ -15,10 +16,10 @@ import Testing
     private let environment = BoundedProcess.scrubbedEnvironment(source: ProcessInfo.processInfo.environment)
     private static let perl = "/usr/bin/perl"
 
-    /// Whether `pid` has gone (killed orphans are reaped by launchd or init shortly after).
+    /// Whether `pid` stopped executing; a container without a reaping init can keep its zombie forever.
     private func gone(_ pid: Int32) async throws -> Bool {
         for _ in 0..<100 {
-            if kill(pid, 0) != 0, errno == ESRCH { return true }
+            if BoundedProcess.hasTerminated(pid) { return true }
             try await Task.sleep(for: .milliseconds(20))
         }
         return false
@@ -258,5 +259,12 @@ import Testing
             )
             #expect(result.standardOutputText == "ok\n")
         }
+    }
+}
+
+extension BoundedProcessSupervisionTests {
+    @Test func `the termination check distinguishes a live process from a missing one`() {
+        #expect(!BoundedProcess.hasTerminated(getpid()))
+        #expect(BoundedProcess.hasTerminated(Int32.max))
     }
 }
