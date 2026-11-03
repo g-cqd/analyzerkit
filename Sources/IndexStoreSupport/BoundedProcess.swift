@@ -1,4 +1,5 @@
 internal import AemiProcess
+internal import Foundation
 internal import Subprocess
 internal import Synchronization
 
@@ -492,7 +493,7 @@ public enum BoundedProcess {
                 holdsToken: options.environmentToken.map { token in
                     { pid in ProcessTable.environment(of: pid, contains: token) }
                 }
-            )
+            ).filter { !hasTerminated($0.pid) }
         }
         guard options.reapsSession || options.environmentToken != nil else { return [] }
         var signalled: [Int32] = []
@@ -505,12 +506,31 @@ public enum BoundedProcess {
             var alive = found
             while !alive.isEmpty, ContinuousClock.now < deadline, !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(20))
-                let current = Set(ProcessTable.list().map { ProcessKey(pid: $0.pid, started: $0.started) })
+                let current = Set(
+                    ProcessTable.list().filter { !hasTerminated($0.pid) }.map {
+                        ProcessKey(pid: $0.pid, started: $0.started)
+                    }
+                )
                 alive = alive.filter { current.contains(ProcessKey(pid: $0.pid, started: $0.started)) }
             }
             for process in alive { ProcessTable.send(SIGKILL, to: process.pid) }
         }
         return Array(Set(signalled)).sorted()
+    }
+
+    /// A zombie has stopped executing even if a container's PID 1 never reaps it. Do not spend repeated
+    /// termination grace periods signalling it. The pid/start-time pairing still protects live cleanup targets.
+    static func hasTerminated(_ pid: Int32) -> Bool {
+        if kill(pid, 0) != 0 { return errno == ESRCH }
+        #if os(Linux)
+            guard let stat = try? String(contentsOfFile: "/proc/\(pid)/stat", encoding: .utf8),
+                let close = stat.lastIndex(of: ")")
+            else { return false }
+            let state = stat[stat.index(after: close)...].split(separator: " ").first
+            return state == "Z" || state == "X"
+        #else
+            return false
+        #endif
     }
 
     /// The processes of `list` a cleanup ends: started since `since`, not this process, and either members of
