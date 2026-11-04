@@ -144,7 +144,8 @@ import Testing
         }
         #expect(result.stopReason == "seen enough")
         #expect(result.terminationSignal == SIGTERM)
-        #expect(ContinuousClock.now - start < .seconds(5))
+        // Half the 30 s sleep and well inside the 20 s timeout: stopped by the monitor, with room for a busy runner.
+        #expect(ContinuousClock.now - start < .seconds(15))
     }
 
     @Test func `a monitor that never stops the child does not change the run`() async throws {

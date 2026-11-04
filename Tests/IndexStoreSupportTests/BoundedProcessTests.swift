@@ -25,7 +25,8 @@ import Testing
         await #expect(throws: BoundedProcess.Failure.timedOut(executable: "/bin/sleep", after: .milliseconds(300))) {
             try await BoundedProcess.run("/bin/sleep", ["30"], environment: environment, timeout: .milliseconds(300))
         }
-        #expect(ContinuousClock.now - start < .seconds(5))
+        // Half the child's 30 s sleep: the deadline ended it, with room for a busy runner.
+        #expect(ContinuousClock.now - start < .seconds(15))
     }
 
     @Test func `a child that ignores the termination signal is killed`() async {
@@ -39,8 +40,9 @@ import Testing
             )
         }
         // Both shutdown phases are bounded: the group stop and swift-subprocess teardown can each use
-        // terminationGrace. Allow scheduling headroom, but never wait for the child's 30-second sleep.
-        let shutdownBudget = BoundedProcess.terminationGrace * 2 + .seconds(2)
+        // terminationGrace. Allow a busy runner's scheduling headroom (it took over 6 s at load average 100),
+        // but never the child's 30-second sleep.
+        let shutdownBudget = BoundedProcess.terminationGrace * 2 + .seconds(11)
         #expect(ContinuousClock.now - start < shutdownBudget)
     }
 
@@ -127,7 +129,8 @@ import Testing
         let start = ContinuousClock.now
         task.cancel()
         let outcome = await task.result
-        #expect(ContinuousClock.now - start < .seconds(5))
+        // Half the child's 30 s sleep: the cancellation ended it, with room for a busy runner.
+        #expect(ContinuousClock.now - start < .seconds(15))
         guard case .failure(let error) = outcome else {
             Issue.record("the child ran to completion")
             return
