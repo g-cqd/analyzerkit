@@ -1,3 +1,4 @@
+import AemiProcess
 import Foundation
 import Synchronization
 import Testing
@@ -157,12 +158,22 @@ import Testing
     @Test func `the session's usage is sampled while the child runs`() async throws {
         var options = BoundedProcess.Options()
         options.sampling = .milliseconds(20)
+        // The child spins until the monitor has seen it use the CPU, then for 25 sampling intervals more, so how long
+        // it lives does not depend on how soon a busy runner schedules the sampler (a fixed amount of work could end
+        // before the sampler's second wake-up, leaving one sample of nothing).
         let result = try await BoundedProcess.run(
             "/bin/sh",
-            ["-c", "i=0; while [ $i -lt 80000 ]; do i=$((i+1)); done"],
+            ["-c", "while :; do :; done"],
             environment: environment,
             options: options
-        )
+        ) { control in
+            while !Task.isCancelled, (ProcessTable.usage(of: control.processIdentifier)?.cpuNanoseconds ?? 0) == 0 {
+                try? await Task.sleep(for: .milliseconds(10))
+            }
+            try? await Task.sleep(for: .milliseconds(500))
+            control.stop(reason: "sampled")
+        }
+        #expect(result.stopReason == "sampled")
         let usage = try #require(result.usage)
         #expect(usage.samples > 1)
         #expect(usage.cpuNanoseconds > 0)
