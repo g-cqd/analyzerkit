@@ -38,7 +38,7 @@ let package = Package(
         // OrderedCollections for the shared configuration's merge; the range AemiJSON already resolves.
         .package(url: "https://github.com/apple/swift-collections.git", "1.7.1"..<"1.8.0"),
         // The byte kernels, POSIX file and bounded-concurrency primitives `SourceCorpus` is built on.
-        .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "b31f49916261927be86db82edee8541fcfc19a64"),
+        .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "e30aad82377cbea62171cc722a88041e97021db2"),
         // The JSON coder behind the per-file facts cache.
         // Subprocess runs the toolchain probes and index builds (IndexStoreSupport's BoundedProcess): a child in a session of
         // its own, torn down with its descendants. Its Foundation trait is not needed. swift-system supplies `FilePath` off
@@ -54,9 +54,9 @@ let package = Package(
         // The wire format of the facts cache's shards (ADR-0011), pinned like AemiJSON to one revision on the same aemi.
         .package(
             url: "https://github.com/g-cqd/AemiProtobuf.git",
-            revision: "2c0a66b9a65781f22d88a70c51e769ed667cd2e0"
+            revision: "4492e961a533d46783ff7b433b075451856055af"
         ),
-        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "f54849a614db4e5670eaf7ea09a88cf4cd97feb2"),
+        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "aec8895f1bc9bdaf2104b0d0ebe91e4a93b3c374"),
     ],
     targets: [
         // The configuration every analyzer reads: one directory, the shared `.swift-analyzers.json` and the tool's own
