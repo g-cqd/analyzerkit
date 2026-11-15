@@ -54,9 +54,9 @@ let package = Package(
         // The wire format of the facts cache's shards (ADR-0011), pinned like AemiJSON to one revision on the same aemi.
         .package(
             url: "https://github.com/g-cqd/AemiProtobuf.git",
-            revision: "e17783e1a24c71fcbab3cd7f6b86735b4b555b34"
+            revision: "8e4124182b65cc9f4130da6a01b41546345acac3"
         ),
-        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "806b481d8cc7e21f07d45537b625c5ac9abfc87e"),
+        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "31ce46141763637c60515eb260f67f57954e69bd"),
     ],
     targets: [
         // The configuration every analyzer reads: one directory, the shared `.swift-analyzers.json` and the tool's own
