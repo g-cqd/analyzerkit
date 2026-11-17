@@ -7,7 +7,7 @@ date: 2026-10-29
 
 ## Context
 
-The review of 2026-10-29 (research `2026-10-29-index-store-reports-reviewed.md`) found the same defects in several tools at
+The review of 2026-10-29 (a removed research note) found the same defects in several tools at
 once, and the fixes share components. A plan that spans six repositories needs one place for its decisions, its roadmap and
 its probe history. ask, TerminalKit and AemiProtobuf keep ADRs, a roadmap, a diary and research notes; ask moved them out of
 `docs/` into `development/` so that user documentation and development records cannot be confused (ask's `development/adr/0128-user-documentation-in-docs-development-records-in-development.md`).

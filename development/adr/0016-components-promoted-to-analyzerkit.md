@@ -7,7 +7,7 @@ date: 2026-10-29
 
 ## Context
 
-Measured similarity between the tools' copies (research `2026-10-29-surface-and-duplication.md`): `SuppressionTable` 100 %,
+Measured similarity between the tools' copies (a removed research note): `SuppressionTable` 100 %,
 `DirectiveScanner` 98 %, `SuppressionDirective` 84–88 %, `ReportFormatter` 85–89 %, `Baseline` 86–92 %, `PathPresentation`
 54–84 %, `AnalysisReport` 69–90 %, the embedding providers 41–80 %, the facts caches 23–48 % against analyzerkit's own
 `CorpusScan.FactsCache`. Some promotion already happened (`Severity`, the bounded reader).
@@ -28,7 +28,7 @@ Measured similarity between the tools' copies (research `2026-10-29-surface-and-
 
 Not moved: deadwood's and dolly's parallel graph primitives (two consumers, tuned apart); each tool's rules, facts,
 configuration types and `ToolInfo`. `FNV1a` copies are replaced by AemiKernel's `XXH64` where a hash is not persisted by a consumer; baseline
-fingerprints keep their hash (ADR-0017).
+fingerprints keep their hash (a removed ADR (0017)).
 
 ## Consequences
 

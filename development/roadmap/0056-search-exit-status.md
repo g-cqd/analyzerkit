@@ -18,4 +18,4 @@ Red: a golden of the table (values and meanings) that fails until the case and i
 case would have changed `allCases`, the sysexits list consumers read. `SearchOutcome.status(matchCount:analyzedFileCount:
 skippedFileCount:)`: 0 when something matched (index matches count with no file read), 70 when nothing matched and
 every file found was skipped, else 1. 3 tests (`SearchOutcomeTests`), red at `dfac87c`. There is no status table in
-`docs` to extend; ADR-0018 and ADR-0026 are the table. swift-search takes it in its 0006.
+`docs` to extend; a removed ADR (0018) and ADR-0026 are the table. swift-search takes it in its 0006.

@@ -41,7 +41,7 @@ The owner decisions of the report, taken by their defaults and recorded here:
 | D1 | swift-search is a tool of its own, not a modeler subcommand (its ADR-0002) |
 | D2 | one MCP server per tool; a family server is swift-search 0003, not before two tools serve MCP |
 | D3 | nothing moves without an ADR naming its consumers (this one) |
-| D4 | indexstore-db: one revision spelled the same everywhere (ADR-0025), not O1 |
+| D4 | indexstore-db: one revision spelled the same everywhere (a removed ADR (0025)), not O1 |
 | D5 | swift-search keeps 0 / 1 for match / no match (ADR-0026) |
 | D6 | SwiftStaticAnalysis is left as it is |
 | D7 | swift-search stays local until it has adopted analyzerkit's head and AemiJSONRPC |

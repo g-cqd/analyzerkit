@@ -13,7 +13,7 @@ diary 2026-10-29-16), four of its lines were wrong: deadwood's `--report-new-sin
 file*, not a git ref; fcheck's and modeler's `--include-tests` means test **and generated** code, so an alias to
 `--include-regions test` would silently drop generated code; dolly's `--semantic` turns on a rule (semantic clones) with
 its own options, unlike arcleak's ranking and deadwood's confidence, which are experiments that never change which
-findings fire; and fcheck's `explain <id>` is the other three tools' `rules <id>`. ADR-0018 since fixed the exit statuses.
+findings fire; and fcheck's `explain <id>` is the other three tools' `rules <id>`. a removed ADR (0018) since fixed the exit statuses.
 
 ## Decision
 
@@ -21,7 +21,7 @@ findings fire; and fcheck's `explain <id>` is the other three tools' `rules <id>
 
 | Group | Options |
 | --- | --- |
-| Input | `<paths…>` (default `.`), `--config <file>`, `--exclude-path <pattern>` (repeatable, ADR-0008), `--include-regions <list>`, `--exclude-regions <list>`, `--define <name>` (repeatable), `--only <file>` (repeatable), `--only-from <file>` |
+| Input | `<paths…>` (default `.`), `--config <file>`, `--exclude-path <pattern>` (repeatable, a removed ADR (0008)), `--include-regions <list>`, `--exclude-regions <list>`, `--define <name>` (repeatable), `--only <file>` (repeatable), `--only-from <file>` |
 | Output | `--format xcode\|json\|sarif`, `--relative-to <dir>`, `--strict`, `--baseline <file>`, `--write-baseline <file>`, `--report-new-since <baseline file>`, `--verbose`, `--quiet`, `--timings` |
 | Rules | `--rules <list>` |
 | Cache | `--cache-path <file>`, `--no-cache` |
@@ -30,9 +30,9 @@ findings fire; and fcheck's `explain <id>` is the other three tools' `rules <id>
 
 Subcommands: `rules` lists the rules; `rules <id>` and `explain <id>` explain one, in every tool.
 
-Exit statuses: ADR-0018.
+Exit statuses: a removed ADR (0018).
 
-Renamed flags stay as hidden aliases until the alias-removal release of the train (ADR-0015, wave 3), each printing one
+Renamed flags stay as hidden aliases until the alias-removal release of the train (a removed ADR (0015), wave 3), each printing one
 line on stderr, `<tool>: note: <old> is deprecated; use <new>`: `--include`/`--exclude` (regions) →
 `--include-regions`/`--exclude-regions`; `--include-tests` → `--include-regions test,generated`;
 `--experimental-embedding-rank` and `--experimental-embedding-confidence` → `--experimental-embeddings rank|confidence`.
@@ -44,5 +44,5 @@ duplication thresholds. modeler's diagram subcommands take the Input and Cache g
 ## Consequences
 
 - analyzerkit renders a probe command made of the groups and pins its `--help` in a golden; each tool's migration
-  (roadmap 0018–0022) pins its own `--help`.
+  (a removed roadmap entry (0018)–0022) pins its own `--help`.
 - Deprecation notes go to stderr only; stdout (the report) does not change.

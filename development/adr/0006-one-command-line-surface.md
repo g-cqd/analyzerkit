@@ -8,7 +8,7 @@ date: 2026-10-29
 
 ## Context
 
-The five tools grew their flags apart (research `2026-10-29-surface-and-duplication.md`): `--exclude` is a *region* on the
+The five tools grew their flags apart (a removed research note): `--exclude` is a *region* on the
 command line of arcleak, deadwood and dolly but a *path* in their configuration files; fcheck and modeler say
 `--include-tests`; `--define` exists only in arcleak although `#if` matters to every tool; `--report-new-since` only in
 deadwood; `--rules` and `explain` only in fcheck; `modeler check` has no `--format`, `--baseline` or `--relative-to`; no tool

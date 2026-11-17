@@ -6,7 +6,7 @@ date: 2026-10-29
 
 # 0013 — `AnalyzerCLI`: one command-line surface
 
-Scope (ADR-0019, ADR-0018): option groups (input, output, rules, cache, index, experimental), unified exit codes
+Scope (ADR-0019, a removed ADR (0018)): option groups (input, output, rules, cache, index, experimental), unified exit codes
 (0/1/64/70/74/78), hidden aliases with a stderr deprecation line, `--verbose` (which also lifts `RunNote`'s ten-path
 cap, from 0011), `--quiet`, `--timings`, the stderr writer.
 
@@ -20,7 +20,7 @@ Each tool's own `--help` golden is the red of its migration (0018–0022), which
 
 ## Done
 
-Diary 2026-10-29-16. Two decisions first, each from a probe of the five shipped commands: ADR-0018 (which findings fail
+Diary 2026-10-29-16. Two decisions first, each from a probe of the five shipped commands: a removed ADR (0018) (which findings fail
 a run, and the six statuses: `research/probes/exit-codes.py`) and ADR-0019, superseding ADR-0006 (four of its option lines
 were wrong against what ships).
 

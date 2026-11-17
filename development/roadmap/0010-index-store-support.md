@@ -6,7 +6,7 @@ date: 2026-10-29
 
 # 0010 — `IndexStoreSupport` in analyzerkit
 
-Scope (ADR-0004, ADR-0005 items 1–2): path normalisation (`<DerivedData>`, `Index.noindex`, `DataStore`, `DataStore/vN`,
+Scope (ADR-0004, a removed ADR (0005) items 1–2): path normalisation (`<DerivedData>`, `Index.noindex`, `DataStore`, `DataStore/vN`,
 `.build/…/index/store`); discovery through `ProjectLayout`; opening with the database under the cache root
 (`index/<hash>`), never next to the store, read-only stores supported; coverage classes `indexed`, `notIndexed`,
 `changedSinceBuild`, `unreadable`; the "no analyzed file indexed" gate that also covers relative-unit-path stores; the

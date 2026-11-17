@@ -1,15 +1,15 @@
 ---
 status: accepted
 date: 2026-10-29
-supersedes: ADR-0020
+supersedes: a removed ADR (0020)
 ---
 
 # 0021 — The configuration directory is found without listing a directory
 
 ## Context
 
-ADR-0020 found the configuration directory at the project root of the analyzed paths (`ProjectLayout`) when the current
-directory had no file. Adopted by the tools (roadmap 0014, diary 2026-10-29-17), it stalled deadwood's command-line
+a removed ADR (0020) found the configuration directory at the project root of the analyzed paths (`ProjectLayout`) when the current
+directory had no file. Adopted by the tools (a removed roadmap entry (0014), diary 2026-10-29-17), it stalled deadwood's command-line
 tests: `ProjectLayout` lists every ancestor directory up to the repository root, or up to `/` outside a repository, and
 walks the whole project tree for manifests. Outside a repository the ancestors include the system's temporary directory,
 262,000 entries on the owner's machine; each run took more than a minute before analysing anything. A configuration
@@ -17,7 +17,7 @@ lookup needs neither the listing nor the manifests: only whether two file names 
 
 ## Decision
 
-ADR-0020 stands as written there, its item 1 replaced by:
+a removed ADR (0020) stands as written there, its item 1 replaced by:
 
 1. **One configuration directory per run, found by `stat` alone.** Without `--config`, it is the current directory if it
    holds `.swift-analyzers.json` or the tool's own file; else the nearest directory holding one, from the analyzed paths'

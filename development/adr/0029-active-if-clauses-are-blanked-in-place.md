@@ -7,9 +7,9 @@ date: 2026-10-31
 
 ## Context
 
-ADR-0019 gives every tool `--define`, and the shared configuration has `defines` and `platforms` (ADR-0020). arcleak
+ADR-0019 gives every tool `--define`, and the shared configuration has `defines` and `platforms` (a removed ADR (0020)). arcleak
 builds a `StaticBuildConfiguration` from them and walks only the active clauses (`activeClause(in:)` in its two
-visitors). fcheck and modeler read every clause and said `--define` had no effect (roadmap 0021, 0022). Their analyses
+visitors). fcheck and modeler read every clause and said `--define` had no effect (a removed roadmap entry (0021), 0022). Their analyses
 walk syntax with many visitors, and fcheck's also runs analyzerkit's `ControlFlowGraph` builder. Teaching each of
 them, the graph builder included, to skip inactive clauses would touch every walk, and a walk that missed it would
 read the wrong code without a sign.

@@ -6,7 +6,7 @@ date: 2026-10-30
 
 # 0049 — Check that every package spells indexstore-db the same
 
-ADR-0025. A script, `Scripts/family-pins.sh`, given the directory holding the checkouts, prints each package's
+a removed ADR (0025). A script, `Scripts/family-pins.sh`, given the directory holding the checkouts, prints each package's
 requirement on indexstore-db, aemi, AemiRegex, AemiJSON, AemiProtobuf and analyzerkit as written in its `Package.swift`,
 and exits 1 when two packages write one identity differently. It reads manifests as text; it resolves nothing.
 
@@ -28,7 +28,7 @@ Two findings while writing it:
 
 - A root package's own requirement does not settle a conflict between two of its dependencies: probe C6 (the root
   requiring indexstore-db `0390867` above one dependency at that revision and one on `release/6.4.x`) fails with the
-  same message. ADR-0025 holds as written.
+  same message. a removed ADR (0025) holds as written.
 - The script reads working-tree manifests, so it answers "would the next train resolve", not "does today's graph":
   analyzerkit resolves today although AemiProtobuf's head requires AemiJSON `1d0e9a2` and analyzerkit `da7b8f6`, because
   the AemiProtobuf revision analyzerkit pins (`483b1fb`) does not depend on AemiJSON yet.
@@ -41,7 +41,7 @@ modeler swift-search`), the next train's work:
 | aemi | `bfc4f5a` / `5e56014` | AemiProtobuf, analyzerkit, swift-search / AemiJSON, AemiRegex |
 | AemiJSON | `1d0e9a2` / `da7b8f6` | AemiProtobuf / analyzerkit and the five tools, swift-search |
 | AemiRegex | `fe9b07f` / `637ffee` | swift-search / AemiJSON |
-| indexstore-db | `0390867` / `64aa0b2` | analyzerkit, swift-search / arcleak, deadwood (ADR-0025; 0018, 0019) |
+| indexstore-db | `0390867` / `64aa0b2` | analyzerkit, swift-search / arcleak, deadwood (a removed ADR (0025); 0018, 0019) |
 | analyzerkit | `7130a2a` / `b2c4804` | swift-search / the five tools (never in one graph) |
 
 Order that clears it: AemiProtobuf to aemi `5e56014` and AemiJSON's head; analyzerkit to aemi `5e56014`, AemiJSON's and

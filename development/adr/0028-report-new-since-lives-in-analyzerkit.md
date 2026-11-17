@@ -8,7 +8,7 @@ date: 2026-10-30
 ## Context
 
 ADR-0019 puts `--report-new-since <baseline file>` in the shared Output group, so every tool's analysing command
-offers it once it migrates (roadmap 0018–0022). Only deadwood implements it (`NewFindings`: promote the out-of-scope
+offers it once it migrates (a removed roadmap entry (0018)–0022). Only deadwood implements it (`NewFindings`: promote the out-of-scope
 findings the base branch's baseline lacks, flag a baseline that matches nothing, and two notes). Each tool would write
 the same twenty lines over its own finding type.
 
