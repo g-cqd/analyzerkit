@@ -280,11 +280,43 @@ public struct ProjectClassification: Sendable {
                 }
             }
         }
+        // Collect every SwiftPM target name reachable from `reachable` across local packages (transitive).
+        var reachedPackageTargets: Set<String> = Set(
+            reachable.filter { !$0.container.hasSuffix(".xcodeproj") }.map(\.name)
+        )
+        var changed = true
+        while changed {
+            changed = false
+            for package in packages.values {
+                guard let targets = package.targets else { continue }
+                for candidate in targets where !candidate.target.isTest {
+                    guard !reachedPackageTargets.contains(candidate.target.name) else { continue }
+                    if let direct = candidate.dependencies,
+                        direct.contains(where: { reachedPackageTargets.contains($0) })
+                    {
+                        reachedPackageTargets.insert(candidate.target.name)
+                        changed = true
+                    }
+                }
+            }
+        }
         for project in projects {
             guard let model = project.model else { continue }
-            let owners = Set(project.targets.indices.filter { reachable.contains(project.targets[$0]) })
+            var owners = Set(project.targets.indices.filter { reachable.contains(project.targets[$0]) })
+            // Cross-package edge (T-ECO-4): any Xcode native target linking a reached local SwiftPM product/target
+            // is also an owner, so Xcode test targets depending on it (or via TEST_HOST/BUNDLE_LOADER) cover `path`.
+            if !reachedPackageTargets.isEmpty {
+                for (index, targetModel) in model.targets.enumerated()
+                where targetModel.packageProducts.contains(where: { reachedPackageTargets.contains($0) }) {
+                    owners.insert(index)
+                }
+            }
             guard !owners.isEmpty else { continue }
             for (index, target) in project.targets.enumerated() where target.isTest {
+                if owners.contains(index) {
+                    found.insert(target)
+                    continue
+                }
                 var seen: Set<Int> = []
                 var queue = model.targets[index].dependencies
                 while let next = queue.popLast() {

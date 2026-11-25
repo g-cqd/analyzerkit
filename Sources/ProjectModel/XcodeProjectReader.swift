@@ -4,8 +4,11 @@ struct XcodeProjectModel: Sendable, Equatable {
     struct Target: Sendable, Equatable {
         var name: String
         var productType: String
-        /// The targets of the same project it depends on (`PBXTargetDependency`), by index.
+        /// The targets of the same project it depends on (`PBXTargetDependency`, plus `TEST_HOST`/`BUNDLE_LOADER`
+        /// host target edges), by index.
         var dependencies: [Int] = []
+        /// Swift package product names linked into this target (`packageProductDependencies`).
+        var packageProducts: [String] = []
     }
 
     /// A path that puts the files at or under it into a target, minus the excluded paths at or under which they lie.
@@ -58,8 +61,18 @@ enum XcodeProjectReader {
             }
             let index = model.targets.count
             targetIndex[targetID] = index
+            var products: [String] = []
+            for prodID in target["packageProductDependencies"]?.strings ?? [] {
+                if let name = objects[prodID]?.dictionary?["productName"]?.string, !name.isEmpty {
+                    products.append(name)
+                }
+            }
             model.targets.append(
-                .init(name: target["name"]?.string ?? targetID, productType: target["productType"]?.string ?? "")
+                .init(
+                    name: target["name"]?.string ?? targetID,
+                    productType: target["productType"]?.string ?? "",
+                    packageProducts: Array(Set(products)).sorted()
+                )
             )
             for folder in target["fileSystemSynchronizedGroups"]?.strings ?? [] {
                 foldersOwned[folder, default: []].append(index)
@@ -80,15 +93,35 @@ enum XcodeProjectReader {
                 }
             }
         }
-        // Dependencies, once every target has its index.
+        // Dependencies, once every target has its index: explicit PBXTargetDependency plus TEST_HOST / BUNDLE_LOADER
+        // host-target references from XCBuildConfiguration buildSettings (T-ECO-4).
+        let targetByName = Dictionary(
+            model.targets.enumerated().map { ($0.element.name, $0.offset) },
+            uniquingKeysWith: { first, _ in first }
+        )
         for (targetID, index) in targetIndex {
+            var deps: Set<Int> = []
             for dependencyID in objects[targetID]?.dictionary?["dependencies"]?.strings ?? [] {
                 guard let dependency = objects[dependencyID]?.dictionary?["target"]?.string,
                     let target = targetIndex[dependency]
                 else { continue }
-                model.targets[index].dependencies.append(target)
+                deps.insert(target)
             }
-            model.targets[index].dependencies.sort()
+            if let configListID = objects[targetID]?.dictionary?["buildConfigurationList"]?.string,
+                let configs = objects[configListID]?.dictionary?["buildConfigurations"]?.strings
+            {
+                for configID in configs {
+                    guard let settings = objects[configID]?.dictionary?["buildSettings"]?.dictionary else { continue }
+                    for key in ["TEST_HOST", "BUNDLE_LOADER"] {
+                        guard let raw = settings[key]?.string else { continue }
+                        for hostIndex in Self.hostTargets(in: raw, targetByName: targetByName)
+                        where hostIndex != index {
+                            deps.insert(hostIndex)
+                        }
+                    }
+                }
+            }
+            model.targets[index].dependencies = deps.sorted()
         }
         // Synchronized folders: a folder's files belong to the targets owning it; an exception set flips membership for
         // its target, removing a file from an owner and adding it to any other target.
@@ -134,6 +167,21 @@ enum XcodeProjectReader {
             guard let path = ProjectPaths.expand(word, projectDirectory: projectDirectory) else { continue }
             model.scripts[path] = name
         }
+    }
+
+    /// Extracts host target indices referenced by `TEST_HOST` or `BUNDLE_LOADER` values such as
+    /// `$(BUILT_PRODUCTS_DIR)/MyApp.app/MyApp` or `$(BUILT_PRODUCTS_DIR)/MyApp.app/Contents/MacOS/MyApp`.
+    private static func hostTargets(in setting: String, targetByName: [String: Int]) -> [Int] {
+        var found: [Int] = []
+        for component in setting.split(separator: "/") {
+            let trimmed = String(component)
+            if let index = targetByName[trimmed] { found.append(index) }
+            if trimmed.hasSuffix(".app") {
+                let stem = String(trimmed.dropLast(4))
+                if let index = targetByName[stem] { found.append(index) }
+            }
+        }
+        return found
     }
 }
 
