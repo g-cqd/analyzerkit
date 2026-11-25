@@ -29,12 +29,12 @@ let package = Package(
         .library(name: "SymbolFacts", targets: ["SymbolFacts"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.8.2"),
-        .package(url: "https://github.com/apple/swift-collections.git", "1.7.1"..<"1.8.0"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "604.0.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.8.2"),
+        .package(url: "https://github.com/apple/swift-collections.git", exact: "1.7.5"),
         .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "429602d69219a9063c443b9dd6bfcc9b75ae3d33"),
-        .package(url: "https://github.com/swiftlang/swift-subprocess.git", from: "1.0.2", traits: []),
-        .package(url: "https://github.com/apple/swift-system.git", from: "1.5.0"),
+        .package(url: "https://github.com/swiftlang/swift-subprocess.git", exact: "1.0.2", traits: []),
+        .package(url: "https://github.com/apple/swift-system.git", exact: "1.8.1"),
         .package(
             url: "https://github.com/swiftlang/indexstore-db.git",
             revision: "0390867818c28241af4650eb4ef29af5669335a3"
