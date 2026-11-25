@@ -1,8 +1,4 @@
-#if canImport(FoundationEssentials)
-    public import FoundationEssentials
-#else
-    public import Foundation
-#endif
+public import Foundation
 
 /// Reads Apple `.xctestrun` property lists (format v1 and v2, T-ECO-4) to discover testable bundles, product module
 /// names, and skip/only test-identifier filters without invoking `xcodebuild`.
