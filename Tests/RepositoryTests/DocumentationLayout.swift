@@ -19,7 +19,7 @@ enum DocumentationLayout {
 
     /// The Markdown files directly in `development/<directory>`: name and text, sorted by name.
     static func documents(in directory: String) -> [(name: String, text: String)] {
-        let url = repositoryRoot.appending(path: "development/\(directory)")
+        let url = repositoryRoot.appending(path: "docs/\(directory)")
         let names = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) ?? []
         return names.filter { $0.hasSuffix(".md") }.sorted()
             .compactMap { name in

@@ -1,9 +1,6 @@
 // swift-tools-version: 6.4
 import PackageDescription
 
-// Strict-by-default, as in the analyzers that use this package: warnings are
-// errors, upcoming features are on, and strict memory safety keeps the unsafe
-// surface at zero. Swift 6 language mode includes complete strict concurrency.
 let strictSwiftSettings: [SwiftSetting] = [
     .treatAllWarnings(as: .error),
     .enableUpcomingFeature("ExistentialAny"),
@@ -33,25 +30,15 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "604.0.0"),
-        // The option groups every analyzer's command line shares (AnalyzerCLI); the tools already use it.
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.8.2"),
-        // OrderedCollections for the shared configuration's merge; the range AemiJSON already resolves.
         .package(url: "https://github.com/apple/swift-collections.git", "1.7.1"..<"1.8.0"),
-        // The byte kernels, POSIX file and bounded-concurrency primitives `SourceCorpus` is built on.
         .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "bd5e4cf4441ca3ed1b424935142586ccaac0f835"),
-        // The JSON coder behind the per-file facts cache.
-        // Subprocess runs the toolchain probes and index builds (IndexStoreSupport's BoundedProcess): a child in a session of
-        // its own, torn down with its descendants. Its Foundation trait is not needed. swift-system supplies `FilePath` off
-        // Apple platforms, as Subprocess itself uses it.
         .package(url: "https://github.com/swiftlang/swift-subprocess.git", from: "1.0.2", traits: []),
         .package(url: "https://github.com/apple/swift-system.git", from: "1.5.0"),
-        // IndexStoreDB opens index stores for IndexStoreSupport, on macOS only. No semver tags: pinned to one revision, which
-        // arcleak and deadwood must pin too (SwiftPM resolves one revision per package in a graph).
         .package(
             url: "https://github.com/swiftlang/indexstore-db.git",
             revision: "0390867818c28241af4650eb4ef29af5669335a3"
         ),
-        // The wire format of the facts cache's shards (ADR-0011), pinned like AemiJSON to one revision on the same aemi.
         .package(
             url: "https://github.com/g-cqd/AemiProtobuf.git",
             revision: "b31d62bbf28286aed1b394c0762257d745bbb530"
@@ -59,8 +46,6 @@ let package = Package(
         .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "1c098f0456a2f86dee32dfd9b85455980216589f"),
     ],
     targets: [
-        // The configuration every analyzer reads: one directory, the shared `.swift-analyzers.json` and the tool's own
-        // file, merged, every key checked (ADR-0020).
         .target(
             name: "AnalyzerConfiguration",
             dependencies: [
@@ -74,8 +59,6 @@ let package = Package(
             dependencies: ["AnalyzerConfiguration"],
             swiftSettings: strictSwiftSettings
         ),
-        // What every analyzer's command line shares: exit statuses and when a run fails (ADR-0018), then the option
-        // groups of ADR-0006.
         .target(
             name: "AnalyzerCLI",
             dependencies: ["ProjectModel", .product(name: "ArgumentParser", package: "swift-argument-parser")],
@@ -113,7 +96,6 @@ let package = Package(
             dependencies: [
                 "SourceCorpus", "ProjectModel", "ReportSupport", .product(name: "AemiKernel", package: "aemi"),
                 .product(name: "AemiProcess", package: "aemi"),
-                // The compiler's `#if` configuration, decoded (ADR-0030).
                 .product(name: "SwiftIfConfig", package: "swift-syntax"),
                 .product(name: "IndexStoreDB", package: "indexstore-db", condition: .when(platforms: [.macOS])),
                 .product(name: "Subprocess", package: "swift-subprocess"),
@@ -132,38 +114,28 @@ let package = Package(
             ],
             swiftSettings: strictSwiftSettings
         ),
-        // The shared model of a Swift project: entry points the system or the
-        // test frameworks create, code regions, generated files, and the shared
-        // report contract (scope, schema version).
         .target(
             name: "ProjectModel",
             dependencies: [
                 "SourceCorpus",
                 .product(name: "AemiFileSystem", package: "aemi"),
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
-                // Package manifests are read as syntax, never run (ADR-0024).
                 .product(name: "SwiftParser", package: "swift-syntax"),
-                // The active `#if` clauses under --define (ADR-0029).
                 .product(name: "SwiftIfConfig", package: "swift-syntax"),
             ],
             swiftSettings: strictSwiftSettings
         ),
-        // What every analyzer does before it looks at a rule: find the Swift files, read and
-        // fingerprint them, and tell one build of the tool from another.
         .target(
             name: "SourceCorpus",
             dependencies: [
                 .product(name: "AemiKernel", package: "aemi"),
                 .product(name: "AemiIO", package: "aemi"),
                 .product(name: "AemiFileSystem", package: "aemi"),
-                // TreeSnapshot's bounded parallel copy and hashing (ADR-0030).
                 .product(name: "AemiRuntime", package: "aemi"),
-                // TreeSnapshot's SHA-256 (aemi ADR 0029: CryptoKit on Apple platforms, swift-crypto elsewhere).
                 .product(name: "AemiDigest", package: "aemi"),
             ],
             swiftSettings: strictSwiftSettings
         ),
-        // The per-file facts cache and the parallel scan that uses it.
         .target(
             name: "CorpusScan",
             dependencies: [
@@ -177,14 +149,11 @@ let package = Package(
             ],
             swiftSettings: strictSwiftSettings
         ),
-        // What the SARIF and xcode reports of every analyzer say about a location.
         .target(
             name: "ReportSupport",
             dependencies: ["SourceCorpus", "ProjectModel"],
             swiftSettings: strictSwiftSettings
         ),
-        // The control flow of a function body, with its throwing and `defer` exits, for the analyzers that check a
-        // property on every path.
         .target(
             name: "ControlFlow",
             dependencies: [.product(name: "SwiftSyntax", package: "swift-syntax")],
@@ -195,8 +164,6 @@ let package = Package(
             dependencies: ["ControlFlow", .product(name: "SwiftParser", package: "swift-syntax")],
             swiftSettings: strictSwiftSettings
         ),
-        // What one file declares and references, with the scopes between: the per-file facts deadwood's reachability
-        // and swift-search's resolution read (roadmap 0055), with their protobuf payload.
         .target(
             name: "SymbolFacts",
             dependencies: [
@@ -214,11 +181,7 @@ let package = Package(
             ],
             swiftSettings: strictSwiftSettings
         ),
-        // A BERT WordPiece tokenizer, so no analyzer links swift-transformers to feed a Core ML bundle.
         .target(name: "WordPiece", swiftSettings: strictSwiftSettings),
-        // The embedding providers arcleak, deadwood and dolly each carried (roadmap 0028): the protocol, the
-        // deterministic oracle, Apple's NLContextualEmbedding and a Core ML bundle behind WordPiece. The Apple halves sit
-        // behind `canImport`, so the module is the protocol, the oracle and the bundle search elsewhere.
         .target(name: "SemanticEmbedding", dependencies: ["WordPiece"], swiftSettings: strictSwiftSettings),
         .testTarget(
             name: "SemanticEmbeddingTests",
@@ -243,7 +206,6 @@ let package = Package(
             ],
             swiftSettings: strictSwiftSettings
         ),
-        // The repository's own rules: the documentation law of `development/WHITE-PAPER.md` (roadmap 0001).
         .testTarget(name: "RepositoryTests", swiftSettings: strictSwiftSettings),
         .testTarget(
             name: "ProjectModelTests",
