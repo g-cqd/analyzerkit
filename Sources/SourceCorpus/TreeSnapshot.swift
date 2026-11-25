@@ -54,7 +54,9 @@ public enum TreeSnapshot {
     /// What a snapshot reads and how far.
     public struct Limits: Sendable, Equatable {
         /// Names neither copied nor entered.
-        public var skippedNames: Set<String> = [".git", ".build", ".swiftpm", "DerivedData", "node_modules"]
+        public var skippedNames: Set<String> = [
+            ".git", ".build", ".swiftpm", "DerivedData", "node_modules", ".DS_Store", "xcuserdata",
+        ]
         public var maxEntries = 150_000
         public var maxFiles = 100_000
         public var maxFileBytes = 128 << 20

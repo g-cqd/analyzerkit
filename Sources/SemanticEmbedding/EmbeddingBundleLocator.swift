@@ -1,5 +1,11 @@
 public import Foundation
 
+#if canImport(Darwin)
+    internal import Darwin
+#elseif canImport(Glibc)
+    internal import Glibc
+#endif
+
 /// Where a tool looks for a Core ML embedding bundle it was shipped with, so a distribution that includes a model uses
 /// it with no flag. A plain binary and every dev or test build ship none, which leaves the on-device default in charge.
 public enum EmbeddingBundleLocator {
@@ -33,7 +39,9 @@ public enum EmbeddingBundleLocator {
         candidates.append(
             executableDirectory.deletingLastPathComponent().appending(path: "share/\(tool)/Models/MiniLM")
         )
-        return candidates.map { $0.resolvingSymlinksInPath() }.first(where: holdsModel)
+        return candidates.map { $0.resolvingSymlinksInPath() }.first {
+            isTrustedBundleDirectory($0.path) && holdsModel($0)
+        }
     }
 
     private static func holdsModel(_ directory: URL) -> Bool {
@@ -41,5 +49,24 @@ public enum EmbeddingBundleLocator {
             let contents = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
         else { return false }
         return contents.contains { $0.pathExtension == "mlpackage" || $0.pathExtension == "mlmodelc" }
+    }
+
+    /// Refuses group- or world-writable model directories or directories owned by another non-root user.
+    private static func isTrustedBundleDirectory(_ path: String) -> Bool {
+        var info = stat()
+        guard unsafe lstat(path, &info) == 0,
+            UInt32(info.st_mode) & UInt32(S_IFMT) == UInt32(S_IFDIR)
+        else { return false }
+        let owner = info.st_uid
+        guard owner == 0 || owner == getuid() else { return false }
+        #if os(Linux)
+            // Linux user-private-group (umask 0002) directories are 0o775 owned by the user's own GID;
+            // reject world-writable directories and group-writable directories owned by another group.
+            if UInt32(info.st_mode) & 0o002 != 0 { return false }
+            if UInt32(info.st_mode) & 0o020 != 0, info.st_gid != getgid() { return false }
+            return true
+        #else
+            return UInt32(info.st_mode) & 0o022 == 0
+        #endif
     }
 }

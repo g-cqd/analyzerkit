@@ -113,4 +113,18 @@ public enum SourcePath {
         var status = stat()
         return unsafe lstat(path, &status) == 0 && status.st_mode & S_IFMT != S_IFLNK
     }
+
+    /// The deepest directory containing every absolute path in `paths`, or `nil` when `paths` is empty.
+    public static func commonAncestor(_ paths: [String]) -> String? {
+        guard !paths.isEmpty else { return nil }
+        let split = paths.map { $0.split(separator: "/", omittingEmptySubsequences: true).map(String.init) }
+        var common = split[0]
+        for other in split.dropFirst() {
+            var length = 0
+            let bound = min(common.count, other.count)
+            while length < bound, common[length] == other[length] { length += 1 }
+            common = Array(common[..<length])
+        }
+        return "/" + common.joined(separator: "/")
+    }
 }

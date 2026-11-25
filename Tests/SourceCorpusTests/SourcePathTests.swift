@@ -67,4 +67,11 @@ import Testing
             #expect(SourcePath.canonicalized(paths) == expected)
         }
     }
+
+    @Test func `commonAncestor finds deepest shared directory`() {
+        #expect(SourcePath.commonAncestor([]) == nil)
+        #expect(SourcePath.commonAncestor(["/a/b/c"]) == "/a/b/c")
+        #expect(SourcePath.commonAncestor(["/a/b/c", "/a/b/d"]) == "/a/b")
+        #expect(SourcePath.commonAncestor(["/a/b", "/x/y"]) == "/")
+    }
 }

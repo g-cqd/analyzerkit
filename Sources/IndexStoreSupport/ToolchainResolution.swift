@@ -222,4 +222,27 @@ public enum ToolchainResolution {
             return nil
         #endif
     }
+
+    /// Resolves a developer tool (such as `simctl`, `swift-format`, or `xcresulttool`) via `/usr/bin/xcrun --find`
+    /// and verifies the resulting executable with ``BinaryTrustChecker``. Returns `nil` when `xcrun` is unavailable,
+    /// fails, or points to an untrusted path.
+    public static func tool(_ name: String) async -> String? {
+        guard !name.isEmpty, !name.contains("/"), !name.utf8.contains(0) else { return nil }
+        guard FileManager.default.isExecutableFile(atPath: "/usr/bin/xcrun") else { return nil }
+        guard
+            let result = try? await BoundedProcess.run(
+                "/usr/bin/xcrun",
+                ["--find", name],
+                environment: BoundedProcess.scrubbedEnvironment(source: ProcessInfo.processInfo.environment),
+                timeout: .seconds(30),
+                outputLimit: 16 << 10
+            ),
+            result.succeeded,
+            !result.outputTruncated
+        else { return nil }
+        let raw = result.standardOutputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return nil }
+        let assessment = BinaryTrustChecker.assess(raw)
+        return assessment.isTrusted ? assessment.path : nil
+    }
 }

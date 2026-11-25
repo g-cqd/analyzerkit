@@ -162,4 +162,24 @@ public struct ProjectLayout: Sendable, Equatable {
     private static func join(_ directory: String, _ name: String) -> String {
         directory.hasSuffix("/") ? directory + name : directory + "/" + name
     }
+
+    /// Local package dependencies of `packageDirectory` (`.package(path:)`) that resolve outside `root`,
+    /// returned as canonical paths in declaration order (deduplicated). Uses AST parsing via
+    /// ``PackageManifestReader/localDependencies(_:)``, never executing `Package.swift`.
+    public static func externalLocalDependencies(root: String, packageDirectory: String) -> [String] {
+        guard let bytes = try? BoundedFileReader.read(path: packageDirectory + "/Package.swift"),
+            let dependencies = PackageManifestReader.localDependencies(String(decoding: bytes, as: UTF8.self))
+        else {
+            return []
+        }
+        let canonicalRoot = SourcePath.canonical(root)
+        var outside: [String] = []
+        for path in dependencies {
+            let resolved = SourcePath.absolute(path, in: packageDirectory)
+            if resolved != canonicalRoot, !resolved.hasPrefix(canonicalRoot + "/"), !outside.contains(resolved) {
+                outside.append(resolved)
+            }
+        }
+        return outside
+    }
 }

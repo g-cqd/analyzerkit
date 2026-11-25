@@ -72,4 +72,15 @@ import Testing
         #expect(EmbeddingBundleLocator.environmentVariable(tool: "arcleak") == "ARCLEAK_EMBEDDING_BUNDLE")
         #expect(EmbeddingBundleLocator.environmentVariable(tool: "swift-search") == "SWIFT_SEARCH_EMBEDDING_BUNDLE")
     }
+
+    @Test func `world-writable override directory is rejected`() throws {
+        let root = URL(fileURLWithPath: NSTemporaryDirectory()).appending(path: "eb-trust-\(UUID().uuidString)")
+        let bad = root.appending(path: "bad")
+        let model = bad.appending(path: "MiniLM.mlmodelc")
+        try FileManager.default.createDirectory(at: model, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.setAttributes([.posixPermissions: 0o777], ofItemAtPath: bad.path)
+        let found = EmbeddingBundleLocator.directory(tool: "dolly", executableDirectory: root, override: bad.path)
+        #expect(found == nil)
+    }
 }

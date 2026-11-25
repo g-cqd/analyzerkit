@@ -15,7 +15,7 @@ struct DeclaredPackageTarget: Sendable, Equatable {
 }
 
 /// Reads a `Package.swift` as syntax, never running it (ADR-0024 item 2).
-enum PackageManifestReader {
+public enum PackageManifestReader {
     enum Reading: Sendable, Equatable {
         case targets([DeclaredPackageTarget])
         /// Why the targets cannot be known without running the manifest.
@@ -53,7 +53,7 @@ enum PackageManifestReader {
     /// spelled, relative to the manifest's directory or absolute; empty without `dependencies:`. Nil when they cannot be
     /// known without running the manifest: a `dependencies:` that is not a literal list, an element that is not a
     /// `.package(…)` call, a path that is not a literal, or a list changed after the `Package(…)` call.
-    static func localDependencies(_ source: String) -> [String]? {
+    public static func localDependencies(_ source: String) -> [String]? {
         let tree = Parser.parse(source: source)
         guard !tree.hasError else { return nil }
         let finder = PackageCallFinder(viewMode: .sourceAccurate)
