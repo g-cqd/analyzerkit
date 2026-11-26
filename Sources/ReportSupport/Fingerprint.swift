@@ -48,8 +48,9 @@ public enum Fingerprint {
         "a" + string(of: hash("\(rule)|\(path)|\(declaration)|\(normalized(text))|\(ordinal)"))
     }
 
-    /// `text` with every run of whitespace replaced by one space, and none at either end.
-    static func normalized(_ text: String) -> String {
+    /// `text` with every run of whitespace replaced by one space, and none at either end: what the anchored identity
+    /// hashes, so a tool that keys its own identities on source text spells it the same way.
+    public static func normalized(_ text: String) -> String {
         text.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" || $0 == "\r" }).joined(separator: " ")
     }
 }

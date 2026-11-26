@@ -63,6 +63,7 @@ spelling and an identity.
 | `BoundedFileReader` | a regular file's bytes with a size cap, from one `open`, `fstat` and `pread` |
 | `ContentFingerprint` | the XXH64 identity of a file's bytes and a salt, for cache entries |
 | `BuildIdentity` | which build of a tool is running, so one build's cached facts are not read by another |
+| `LineIndex.excerpt`, `LineIndex.content(ofLine:)` | the numbered lines around a finding, clamped to the file, long lines cut on a character boundary: what a report or coding agent shows without opening the file |
 | `BoundedFileReader.readConfiguration` | a configuration or baseline file's bytes, stat first, with the wording of Foundation's errors that the analyzers print |
 
 ## Library: `CorpusScan`
@@ -87,7 +88,8 @@ spelling and an identity.
 | `BaselineFile` | the baseline file: sorted unique fingerprints, the tool, `version` 1 or none; validated on load |
 | `XcodeDiagnostic` | one `path:line:column: severity: [rule] message` line |
 | `ToolReport`, `ToolReportFormat` | the xcode, JSON and SARIF renderers and the one-line summary: a tool says what its findings and report hold, and the wording, the order of the notes and the keys are fixed here |
-| `FindingBaseline`, `Fingerprint` | the fingerprint of a finding (FNV-1a over rule, path, line, column and message) and the baseline file built on it |
+| `FindingBaseline`, `Fingerprint` | the fingerprint of a finding (FNV-1a over rule, path, line, column and message) and the baseline file built on it; `Fingerprint.normalized` is the whitespace collapsing the anchored identity hashes |
+| `AcceptanceFile` | reviewed acceptances kept out of the source (`.<tool>-accepted.json`): one entry per decision with its reason (10+ non-space characters), matched by the tool's stable id, then by an anchor (path, declaration, rule, collapsed text, replacement) that matches one finding; unmatched entries are stale; sorted, deterministic bytes |
 
 `ProjectModel` also holds `Severity` and `Array.partitioned(by:)`, which every analyzer's report used a copy of.
 
