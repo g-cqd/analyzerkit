@@ -31,10 +31,10 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "604.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.8.2"),
-        .package(url: "https://github.com/apple/swift-collections.git", exact: "1.7.5"),
+        .package(url: "https://github.com/apple/swift-collections.git", exact: "1.7.6"),
         .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "9f8d1a3eafed0ad23919b9c68d33606632ce0659"),
         .package(url: "https://github.com/swiftlang/swift-subprocess.git", exact: "1.0.2", traits: []),
-        .package(url: "https://github.com/apple/swift-system.git", exact: "1.8.1"),
+        .package(url: "https://github.com/apple/swift-system.git", exact: "1.9.0"),
         .package(
             url: "https://github.com/swiftlang/indexstore-db.git",
             revision: "0390867818c28241af4650eb4ef29af5669335a3"
