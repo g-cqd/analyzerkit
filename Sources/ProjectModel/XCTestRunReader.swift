@@ -33,6 +33,18 @@ public enum XCTestRunReader {
         let onlyTestIdentifiers: [String]?
         let skipTestIdentifiers: [String]?
 
+        /// The target under `name`, its identifier lists empty when absent.
+        func target(named name: String) -> XCTestRun.TestTarget {
+            XCTestRun.TestTarget(
+                blueprintName: name,
+                productModuleName: productModuleName,
+                testBundlePath: testBundlePath,
+                testHostPath: testHostPath,
+                onlyTestIdentifiers: onlyTestIdentifiers ?? [],
+                skipTestIdentifiers: skipTestIdentifiers ?? []
+            )
+        }
+
         enum CodingKeys: String, CodingKey {
             case blueprintName = "BlueprintName"
             case productModuleName = "ProductModuleName"
@@ -81,16 +93,7 @@ public enum XCTestRunReader {
                 guard let raw = try? container.decode(RawTarget.self, forKey: key) else { continue }
                 let name = raw.blueprintName ?? key.stringValue
                 guard !name.isEmpty else { continue }
-                found.append(
-                    XCTestRun.TestTarget(
-                        blueprintName: name,
-                        productModuleName: raw.productModuleName,
-                        testBundlePath: raw.testBundlePath,
-                        testHostPath: raw.testHostPath,
-                        onlyTestIdentifiers: raw.onlyTestIdentifiers ?? [],
-                        skipTestIdentifiers: raw.skipTestIdentifiers ?? []
-                    )
-                )
+                found.append(raw.target(named: name))
             }
             targets = found
         }
@@ -108,16 +111,7 @@ public enum XCTestRunReader {
             for config in configs {
                 for raw in config.testTargets ?? [] {
                     guard let name = raw.blueprintName, !name.isEmpty else { continue }
-                    targets.append(
-                        XCTestRun.TestTarget(
-                            blueprintName: name,
-                            productModuleName: raw.productModuleName,
-                            testBundlePath: raw.testBundlePath,
-                            testHostPath: raw.testHostPath,
-                            onlyTestIdentifiers: raw.onlyTestIdentifiers ?? [],
-                            skipTestIdentifiers: raw.skipTestIdentifiers ?? []
-                        )
-                    )
+                    targets.append(raw.target(named: name))
                 }
             }
         } else if let v1 = try? PropertyListDecoder().decode(V1Root.self, from: data) {
