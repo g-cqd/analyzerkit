@@ -27,6 +27,7 @@ complexity; all are linear in their input.
 | API | Answers |
 | --- | --- |
 | `ExitStatus`, `RunOutcome` | the six exit statuses of every analyzer and when a run fails: an error, a warning under `--strict`, never a note; 70 when every file found was skipped |
+| `AgentGuide` | `<tool> agent-guide --install`: a skill file for `.agents/skills/<tool>/` and `.claude/skills/<tool>/`, and a marked `AGENTS.md` section replaced in place; idempotent, never written through a symbolic link |
 | `InputOptions`, `OutputOptions`, `RuleOptions`, `CacheOptions`, `IndexOptions`, `ExperimentalOptions` | the shared ArgumentParser option groups, deprecated spellings folded in and reported as `Deprecation`s |
 
 ## Library: `AnalyzerConfiguration`
