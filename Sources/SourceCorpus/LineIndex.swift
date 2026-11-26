@@ -61,6 +61,12 @@ public struct LineIndex: Sendable {
         return ends[line - 1] - starts[line - 1]
     }
 
+    /// The bytes of 1-based `line` without its terminator, or nil when there is no such line.
+    public func content(ofLine line: Int) -> ArraySlice<UInt8>? {
+        guard line >= 1, line <= starts.count else { return nil }
+        return bytes[starts[line - 1]..<ends[line - 1]]
+    }
+
     /// The 1-based line holding the byte at `offset` (a terminator belongs to the line it ends); the end of the file
     /// belongs to the last line. Nil past the end.
     /// - Complexity: O(log *l*) in the lines.
