@@ -32,7 +32,7 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-syntax.git", exact: "604.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.8.2"),
         .package(url: "https://github.com/apple/swift-collections.git", exact: "1.7.5"),
-        .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "04cfb910446f446476c0c853317931f3444b1323"),
+        .package(url: "https://github.com/Aemi-Studio/aemi.git", revision: "1567137e2c810eb489facf29d90a2c623b75d604"),
         .package(url: "https://github.com/swiftlang/swift-subprocess.git", exact: "1.0.2", traits: []),
         .package(url: "https://github.com/apple/swift-system.git", exact: "1.8.1"),
         .package(
@@ -41,9 +41,9 @@ let package = Package(
         ),
         .package(
             url: "https://github.com/g-cqd/AemiProtobuf.git",
-            revision: "a6101980fe55ad2195bf1f6133fbe9fe7e8490b9"
+            revision: "3da9bdee8af8a7e2c6e1d8bb8a5525160331c473"
         ),
-        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "a7bb9cc463fd1a7f58a404ce28dbbee6b7ee7fe7"),
+        .package(url: "https://github.com/g-cqd/AemiJSON.git", revision: "75deac170071149540c436bdab47a5c6d5520a4a"),
     ],
     targets: [
         .target(
