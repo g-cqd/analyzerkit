@@ -21,20 +21,19 @@ public struct AgentGuide: Sendable, Equatable {
         case agentsMD = "agents-md"
     }
 
-    /// Why nothing was written.
-    public enum Failure: Error, Sendable, Equatable, CustomStringConvertible {
-        case invalidToolName(String)
-        case symbolicLink(String)
-        case notARegularFile(String)
-        case unbalancedMarkers(String)
+    /// Why nothing was written: the path (or tool name) refused, and the reason.
+    public struct Failure: Error, Sendable, Equatable, CustomStringConvertible {
+        public let subject: String
+        public let reason: String
+        public var description: String { "\(subject): \(reason)" }
 
-        public var description: String {
-            switch self {
-            case .invalidToolName(let name): "tool name \(name.debugDescription) is not a lowercase word"
-            case .symbolicLink(let path): "\(path) is a symbolic link; not written through it"
-            case .notARegularFile(let path): "\(path) is not a regular file"
-            case .unbalancedMarkers(let path): "\(path) has an agent-guide start marker without its end, or the reverse"
-            }
+        static func invalidToolName(_ name: String) -> Self { Self(subject: name, reason: "not a lowercase word") }
+        static func symbolicLink(_ path: String) -> Self {
+            Self(subject: path, reason: "a symbolic link, not followed")
+        }
+        static func notARegularFile(_ path: String) -> Self { Self(subject: path, reason: "not a regular file") }
+        static func unbalancedMarkers(_ path: String) -> Self {
+            Self(subject: path, reason: "an agent-guide start marker without its end, or the reverse")
         }
     }
 

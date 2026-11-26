@@ -24,19 +24,21 @@ public struct TestDeclaration: Sendable, Hashable {
 public enum TestDeclarationScanner {
     /// - Complexity: O(*n*) in the syntax nodes.
     public static func scan(_ tree: SourceFileSyntax, converter: SourceLocationConverter) -> [TestDeclaration] {
-        let visitor = Visitor(converter: converter)
-        visitor.walk(tree)
-        return visitor.found
+        let collector = Collector { converter.location(for: $0).line }
+        collector.walk(tree)
+        return collector.found
     }
 
-    private final class Visitor: SyntaxVisitor {
-        let converter: SourceLocationConverter
+    /// Walks declarations in source order, keeping the stack of enclosing types.
+    private final class Collector: SyntaxVisitor {
+        /// The 1-based line of a position.
+        let lineOf: (AbsolutePosition) -> Int
         var found: [TestDeclaration] = []
         /// The enclosing types, and whether each is an `XCTestCase` subclass.
         var types: [(name: String, isTestCase: Bool)] = []
 
-        init(converter: SourceLocationConverter) {
-            self.converter = converter
+        init(lineOf: @escaping (AbsolutePosition) -> Int) {
+            self.lineOf = lineOf
             super.init(viewMode: .sourceAccurate)
         }
 
@@ -88,8 +90,8 @@ public enum TestDeclarationScanner {
                 && node.signature.parameterClause.parameters.isEmpty
             if isSwiftTesting || isXCTest {
                 let labels = node.signature.parameterClause.parameters.map { $0.firstName.text + ":" }.joined()
-                let start = converter.location(for: node.positionAfterSkippingLeadingTrivia).line
-                let end = converter.location(for: node.endPositionBeforeTrailingTrivia).line
+                let start = lineOf(node.positionAfterSkippingLeadingTrivia)
+                let end = lineOf(node.endPositionBeforeTrailingTrivia)
                 found.append(
                     TestDeclaration(
                         name: name,
