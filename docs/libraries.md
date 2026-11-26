@@ -13,6 +13,8 @@ Each product of analyzerkit, and what it answers. They are independent: depend o
 | `ConditionalCompilation` | whether an `#if` clause compiles only in debug builds |
 | `SystemEntryPoints` | the classes project files tell the system to create: Info.plist principal, extension and scene-delegate classes, their `INFOPLIST_KEY_` build settings, storyboard and xib `customClass` |
 | `GeneratedCode` | whether a generator wrote a file, from its header or its path |
+| `XcodeNativeTargets`, `XcodeNativeTarget` | a project's native targets with their `project.pbxproj` identifiers and product types (unit-test, UI-test), what a scheme refers to |
+| `XcodeSchemeWriter` | a shared scheme that builds for testing and tests the given targets, for workspaces whose own schemes leave test targets out |
 | `TestDeclarationScanner`, `TestDeclaration` | the tests a file declares, with their suite, signature and line span: `@Test` functions at any depth, and the parameterless `test…` methods of a direct `XCTestCase` subclass |
 | `TestConventions` | the attributes and base class the test frameworks look for, and whether a file is test code (its imports or its path) |
 | `ProjectPlatforms` | the platforms a project builds for, from an Xcode project's `SDKROOT` or a manifest's `platforms`, as `#if os(...)` names |
