@@ -68,3 +68,58 @@ import Testing
         #expect(!xml.contains(#"A&B<"C">"#))
     }
 }
+
+@Suite struct XcodeWorkspaceTests {
+    @Test func `a workspace lists its member projects through nested groups and every location kind`() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("ws-\(UUID().uuidString)").path
+        defer { try? FileManager.default.removeItem(atPath: root) }
+        let workspace = root + "/repo/Main.xcworkspace"
+        try FileManager.default.createDirectory(atPath: workspace, withIntermediateDirectories: true)
+        let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <Workspace version = "1.0">
+               <Group location = "group:Modules" name = "Modules">
+                  <FileRef location = "group:Core/Core.xcodeproj"></FileRef>
+                  <Group location = "container:Features" name = "Features">
+                     <FileRef location = "group:./Pay &amp; Ship/Pay.xcodeproj"></FileRef>
+                  </Group>
+                  <Group name = "No location">
+                     <FileRef location = "group:Net.xcodeproj"/>
+                  </Group>
+               </Group>
+               <FileRef location = "group:App/App.xcodeproj"></FileRef>
+               <FileRef location = 'container:../Shared/Shared.xcodeproj'></FileRef>
+               <FileRef location = "absolute:/opt/Vendor/Vendor.xcodeproj"></FileRef>
+               <FileRef location = "group:Modules/Core/Core.xcodeproj"></FileRef>
+               <FileRef location = "group:README.md"></FileRef>
+               <FileRef location = "self:"></FileRef>
+               <FileRef location = "developer:Platforms/X.xcodeproj"></FileRef>
+            </Workspace>
+            """
+        try Data(xml.utf8).write(to: URL(fileURLWithPath: workspace + "/contents.xcworkspacedata"))
+        let projects = try #require(XcodeWorkspace.projects(workspace: workspace))
+        #expect(
+            projects == [
+                root + "/repo/Modules/Core/Core.xcodeproj",
+                root + "/repo/Features/Pay & Ship/Pay.xcodeproj",
+                root + "/repo/Modules/Net.xcodeproj",
+                root + "/repo/App/App.xcodeproj",
+                root + "/Shared/Shared.xcodeproj",
+                "/opt/Vendor/Vendor.xcodeproj",
+            ]
+        )
+        #expect(XcodeWorkspace.projects(workspace: root + "/Missing.xcworkspace") == nil)
+    }
+
+    @Test func `a scheme references a project outside its directory by absolute path`() {
+        let target = XcodeNativeTarget(
+            id: "T",
+            name: "SharedTests",
+            productName: "SharedTests",
+            productType: "com.apple.product-type.bundle.unit-test",
+            project: "/elsewhere/Shared.xcodeproj"
+        )
+        let xml = XcodeSchemeWriter.testScheme([target], containerDirectory: "/repo")
+        #expect(xml.contains(#"ReferencedContainer = "absolute:/elsewhere/Shared.xcodeproj""#))
+    }
+}

@@ -56,17 +56,17 @@ public enum XcodeNativeTargets {
 public enum XcodeSchemeWriter {
     /// The `.xcscheme` XML building for testing and testing `targets`.
     /// - Parameter containerDirectory: the directory holding the project or workspace the scheme belongs to; each
-    ///   target's project is referenced relative to it (`container:App.xcodeproj`).
+    ///   target's project is referenced relative to it (`container:App.xcodeproj`), or by absolute path outside it.
     public static func testScheme(_ targets: [XcodeNativeTarget], containerDirectory: String) -> String {
         func reference(_ target: XcodeNativeTarget, indent: String) -> String {
-            let container = relative(target.project, to: containerDirectory)
+            let container = containerReference(target.project, from: containerDirectory)
             return """
                 \(indent)<BuildableReference
                 \(indent)   BuildableIdentifier = "primary"
                 \(indent)   BlueprintIdentifier = "\(escaped(target.id))"
                 \(indent)   BuildableName = "\(escaped(target.productName)).xctest"
                 \(indent)   BlueprintName = "\(escaped(target.name))"
-                \(indent)   ReferencedContainer = "container:\(escaped(container))">
+                \(indent)   ReferencedContainer = "\(escaped(container))">
                 \(indent)</BuildableReference>
                 """
         }
@@ -122,10 +122,11 @@ public enum XcodeSchemeWriter {
             """
     }
 
-    /// `path` relative to `directory` when inside it, else `path` itself.
-    private static func relative(_ path: String, to directory: String) -> String {
+    /// `container:` and `path` relative to `directory` when inside it, else `absolute:` and `path` itself (Xcode
+    /// joins a `container:` path to the directory even when it starts with `/`).
+    private static func containerReference(_ path: String, from directory: String) -> String {
         let prefix = directory.hasSuffix("/") ? directory : directory + "/"
-        return path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : path
+        return path.hasPrefix(prefix) ? "container:" + path.dropFirst(prefix.count) : "absolute:" + path
     }
 
     /// `text` with XML's five special characters escaped, for an attribute value.
